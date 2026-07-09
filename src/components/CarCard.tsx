@@ -1,4 +1,5 @@
 import Image from "next/image";
+import Link from "next/link";
 import { Carro } from "@/types/Carro";
 
 interface CarCardProps {
@@ -34,6 +35,13 @@ export default function CarCard({ carro }: CarCardProps) {
         <p className="mt-5 text-xl font-bold text-zinc-900">
           R$ {carro.preco_a_partir_rs.toLocaleString("pt-BR")}
         </p>
+
+        <Link
+          href={`/carros/${carro.id}`}
+          className="mt-5 inline-block rounded-xl bg-zinc-900 px-5 py-3 text-sm font-semibold text-white transition hover:bg-zinc-700"
+        >
+          Ver detalhes
+        </Link>
       </div>
     </article>
   );
