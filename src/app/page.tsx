@@ -23,16 +23,20 @@ export default function Home() {
   });
 
   return (
-    <main>
-      <Header />
+    <main className="min-h-screen bg-zinc-100">
+      <div className="mx-auto max-w-7xl px-6 py-8">
+        <Header />
 
-      <SearchBar busca={busca} onBuscaChange={setBusca} />
+        <div className="my-8">
+          <SearchBar busca={busca} onBuscaChange={setBusca} />
+        </div>
 
-      <section>
-        {carrosFiltrados.map((carro) => (
-          <CarCard key={carro.id} carro={carro} />
-        ))}
-      </section>
+        <section className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+          {carrosFiltrados.map((carro) => (
+            <CarCard key={carro.id} carro={carro} />
+          ))}
+        </section>
+      </div>
     </main>
   );
 }
