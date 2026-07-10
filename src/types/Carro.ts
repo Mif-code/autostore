@@ -12,7 +12,7 @@ export interface Carro {
   preco_obs: string;
   cores: string;
   itens: string;
-  descricao: string;
+  desc: string;
   imagem_arquivo: string;
   imagens: string[];
   foto_referencia: string;
