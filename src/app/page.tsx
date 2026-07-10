@@ -99,30 +99,82 @@ export default function Home() {
   }
 
   return (
-    <main className="min-h-screen bg-zinc-100">
-      <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 sm:py-8">
+    <main className="min-h-screen bg-slate-100">
+      <div className="mx-auto max-w-7xl px-4 py-5 sm:px-6 sm:py-7">
         <Header />
 
-        <section className="my-8">
-          <div className="flex flex-col gap-4 lg:flex-row lg:items-stretch">
-            <div className="flex-1">
-              <SearchBar
-                busca={busca}
-                onBuscaChange={setBusca}
-              />
-            </div>
+        <section className="py-7">
+          <div className="mb-5">
+            <p className="text-sm font-semibold text-blue-600">
+              Catálogo de veículos
+            </p>
 
-            <Link
-              href="/chat/new"
-              className="flex min-h-17.5 items-center justify-center rounded-2xl bg-blue-600 px-8 font-bold text-white shadow-sm transition hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:ring-offset-2 lg:min-w-56"
-            >
-              Conversar com VroomAI
-            </Link>
+            <h1 className="mt-1 text-2xl font-extrabold tracking-tight text-slate-900 sm:text-3xl">
+              Encontre o carro ideal para você
+            </h1>
+
+            <p className="mt-2 max-w-2xl text-sm leading-relaxed text-slate-500 sm:text-base">
+              Pesquise os veículos disponíveis, compare especificações e
+              consulte o AutoStoreAI para receber recomendações.
+            </p>
           </div>
 
-          <div className="mt-6 flex flex-col gap-4 rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between">
+          <div className="grid gap-3 lg:grid-cols-[1fr_230px]">
+            <SearchBar
+              busca={busca}
+              onBuscaChange={setBusca}
+            />
+
+            <div className="relative">
+              <label
+                htmlFor="ordenacao"
+                className="sr-only"
+              >
+                Ordenar veículos
+              </label>
+
+              <svg
+                aria-hidden="true"
+                viewBox="0 0 24 24"
+                className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.8"
+              >
+                <path d="M3 6h18" />
+                <path d="M6 12h12" />
+                <path d="M10 18h4" />
+              </svg>
+
+              <select
+                id="ordenacao"
+                className="h-14 w-full appearance-none rounded-2xl border border-slate-200 bg-white pl-12 pr-10 text-sm font-semibold text-slate-700 shadow-sm outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
+                value={ordenacao}
+                onChange={(event) =>
+                  setOrdenacao(event.target.value as TipoOrdenacao)
+                }
+              >
+                <option value="relevancia">Mais relevantes</option>
+                <option value="menor-preco">Menor preço</option>
+                <option value="maior-preco">Maior preço</option>
+              </select>
+
+              <svg
+                aria-hidden="true"
+                viewBox="0 0 24 24"
+                className="pointer-events-none absolute right-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+              >
+                <path d="m7 10 5 5 5-5" />
+              </svg>
+            </div>
+          </div>
+
+          <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <p className="font-semibold text-zinc-900">
+              <p className="text-sm font-semibold text-slate-700">
                 {carrosExibidos.length}{" "}
                 {carrosExibidos.length === 1
                   ? "veículo encontrado"
@@ -130,45 +182,42 @@ export default function Home() {
               </p>
 
               {busca.trim() !== "" && (
-                <p className="mt-1 text-sm text-zinc-500">
-                  Resultado da pesquisa por &quot;{busca}&quot;
+                <p className="mt-1 text-xs text-slate-500">
+                  Resultados para &quot;{busca}&quot;
                 </p>
               )}
             </div>
 
-            <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-              <label
-                htmlFor="ordenacao"
-                className="text-sm font-medium text-zinc-700"
-              >
-                Ordenar por:
-              </label>
+            <Link
+              href="/chat/new"
+              className="inline-flex items-center gap-2 text-sm font-semibold text-blue-600 transition hover:text-blue-700"
+            >
+              Pedir ajuda ao AutoStoreAI
 
-              <select
-                id="ordenacao"
-                className="rounded-xl border border-zinc-300 bg-zinc-50 px-4 py-2.5 text-sm font-medium text-zinc-900 outline-none transition focus:border-blue-600 focus:bg-white"
-                value={ordenacao}
-                onChange={(event) =>
-                  setOrdenacao(event.target.value as TipoOrdenacao)
-                }
+              <svg
+                aria-hidden="true"
+                viewBox="0 0 24 24"
+                className="h-4 w-4"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
               >
-                <option value="relevancia">Relevância</option>
-                <option value="menor-preco">Menor preço</option>
-                <option value="maior-preco">Maior preço</option>
-              </select>
-            </div>
+                <path d="M5 12h14" />
+                <path d="m13 6 6 6-6 6" />
+              </svg>
+            </Link>
           </div>
 
           {carrosSelecionados.length > 0 && (
-            <div className="mt-4 flex flex-col gap-4 rounded-2xl border border-blue-200 bg-blue-50 p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between">
+            <div className="mt-5 flex flex-col gap-4 rounded-2xl border border-blue-200 bg-blue-50 p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between">
               <div>
-                <p className="font-bold text-zinc-900">
+                <p className="font-bold text-slate-900">
                   {carrosSelecionados.length} de {LIMITE_COMPARACAO}{" "}
                   veículos selecionados
                 </p>
 
-                <p className="mt-1 text-sm text-zinc-600">
-                  Selecione pelo menos 2 veículos para comparar.
+                <p className="mt-1 text-sm text-slate-600">
+                  Selecione de dois a três veículos para comparar.
                 </p>
               </div>
 
@@ -176,7 +225,7 @@ export default function Home() {
                 <button
                   type="button"
                   onClick={limparComparacao}
-                  className="rounded-xl border border-zinc-300 bg-white px-5 py-3 text-sm font-semibold text-zinc-700 transition hover:bg-zinc-100 focus:outline-none focus:ring-2 focus:ring-zinc-500 focus:ring-offset-2"
+                  className="rounded-xl border border-slate-300 bg-white px-5 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-slate-500 focus:ring-offset-2"
                 >
                   Limpar seleção
                 </button>
@@ -192,7 +241,7 @@ export default function Home() {
                   <button
                     type="button"
                     disabled
-                    className="cursor-not-allowed rounded-xl bg-zinc-300 px-5 py-3 text-sm font-semibold text-zinc-500"
+                    className="cursor-not-allowed rounded-xl bg-slate-300 px-5 py-3 text-sm font-semibold text-slate-500"
                   >
                     Comparar veículos
                   </button>
@@ -223,16 +272,26 @@ export default function Home() {
             })}
           </section>
         ) : (
-          <section className="rounded-2xl border border-zinc-200 bg-white p-10 text-center shadow-sm">
-            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-blue-50 text-2xl">
-              🔎
+          <section className="rounded-2xl border border-slate-200 bg-white p-10 text-center shadow-sm">
+            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-blue-50 text-blue-600">
+              <svg
+                aria-hidden="true"
+                viewBox="0 0 24 24"
+                className="h-7 w-7"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.8"
+              >
+                <circle cx="11" cy="11" r="7" />
+                <path d="m20 20-3.5-3.5" />
+              </svg>
             </div>
 
-            <h2 className="mt-5 text-xl font-bold text-zinc-900">
+            <h2 className="mt-5 text-xl font-bold text-slate-900">
               Nenhum veículo encontrado
             </h2>
 
-            <p className="mt-2 text-zinc-600">
+            <p className="mt-2 text-slate-600">
               Tente pesquisar por outra marca, modelo, categoria ou motor.
             </p>
 
