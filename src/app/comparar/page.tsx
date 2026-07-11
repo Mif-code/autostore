@@ -355,19 +355,22 @@ function ConteudoComparacao() {
     );
   }, [carrosSelecionados]);
 
-  const alturaImagemSelecionada =
-    carrosSelecionados.length === 1
-      ? "h-72"
-      : carrosSelecionados.length === 2
-        ? "h-56"
-        : "h-44";
+  let alturaImagemSelecionadaValue = "h-44";
+  if (carrosSelecionados.length === 1) {
+    alturaImagemSelecionadaValue = "h-72";
+  } else if (carrosSelecionados.length === 2) {
+    alturaImagemSelecionadaValue = "h-56";
+  }
 
-  const tamanhosImagemSelecionada =
-    carrosSelecionados.length === 1
-      ? "(max-width: 1280px) 100vw, 1000px"
-      : carrosSelecionados.length === 2
-        ? "(max-width: 1280px) 50vw, 520px"
-        : "(max-width: 1280px) 33vw, 360px";
+  const alturaImagemSelecionada = alturaImagemSelecionadaValue;
+
+  let tamanhosImagemSelecionada = "(max-width: 1280px) 33vw, 360px";
+
+  if (carrosSelecionados.length === 1) {
+    tamanhosImagemSelecionada = "(max-width: 1280px) 100vw, 1000px";
+  } else if (carrosSelecionados.length === 2) {
+    tamanhosImagemSelecionada = "(max-width: 1280px) 50vw, 520px";
+  }
 
   function adicionarVeiculo(carroId: number): void {
     const idsAtuais = carrosSelecionados.map(
@@ -566,8 +569,7 @@ function ConteudoComparacao() {
           >
             +
           </span>
-
-          Adicionar do catálogo
+          <span>Adicionar do catálogo</span>
         </Link>
       </section>
 
@@ -602,8 +604,9 @@ function ConteudoComparacao() {
                 >
                   +
                 </span>
-
-                {carro.montadora} {carro.modelo}
+                <span>
+                  {carro.montadora} {carro.modelo}
+                </span>
               </button>
             ))}
           </div>
@@ -693,8 +696,7 @@ function ConteudoComparacao() {
                             sizes="16px"
                             className="object-contain"
                           />
-                        </span>
-
+                        </span>{" "}
                         VroomAI
                       </Link>
                     </div>

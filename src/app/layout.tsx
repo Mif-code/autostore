@@ -16,24 +16,22 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "AutoStore",
+  title: "Vroom AutoStore",
   description:
-    "Catálogo, comparação de veículos e assistente inteligente.",
+    "Catálogo inteligente de veículos com comparação, leads e assistente VroomAI.",
 };
-
-interface RootLayoutProps {
-  readonly children: React.ReactNode;
-}
 
 export default function RootLayout({
   children,
-}: RootLayoutProps) {
+}: Readonly<{
+  children: React.ReactNode;
+}>) {
   return (
     <html
       lang="pt-BR"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="flex min-h-full flex-col">
+      <body className="min-h-full flex flex-col">
         {children}
 
         <FloatingChat />
