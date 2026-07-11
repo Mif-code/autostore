@@ -1,16 +1,24 @@
 "use client";
 
-import { useMemo, useState } from "react";
 import Link from "next/link";
+import { useMemo, useState } from "react";
 
+import CarCard from "@/components/CarCard";
+import FilterSidebar, {
+  identificarCombustivel,
+  PRECO_MAXIMO_CATALOGO,
+  type TipoCombustivel,
+} from "@/components/FilterSidebar";
 import Header from "@/components/Header";
 import SearchBar from "@/components/SearchBar";
-import CarCard from "@/components/CarCard";
 
 import carrosData from "@/data/carros_catalogo.json";
 import type { Carro } from "@/types/Carro";
 
-type TipoOrdenacao = "relevancia" | "menor-preco" | "maior-preco";
+type TipoOrdenacao =
+  | "relevancia"
+  | "menor-preco"
+  | "maior-preco";
 
 const carros = carrosData as Carro[];
 const LIMITE_COMPARACAO = 3;
@@ -18,80 +26,247 @@ const LIMITE_COMPARACAO = 3;
 function normalizarTexto(texto: string): string {
   return texto
     .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
+    .replaceAll("\u0301", "")
+    .replaceAll("\u0300", "")
+    .replaceAll("\u0302", "")
+    .replaceAll("\u0303", "")
+    .replaceAll("\u0308", "")
+    .replaceAll("\u0327", "")
     .toLowerCase()
     .trim();
 }
 
+function obterTextoQuantidade(
+  quantidade: number,
+): string {
+  if (quantidade === 1) {
+    return "1 veículo encontrado";
+  }
+
+  return `${quantidade} veículos encontrados`;
+}
+
 export default function Home() {
   const [busca, setBusca] = useState("");
+
   const [ordenacao, setOrdenacao] =
     useState<TipoOrdenacao>("relevancia");
 
-  const [carrosSelecionados, setCarrosSelecionados] = useState<number[]>(
-    [],
+  const [
+    montadorasSelecionadas,
+    setMontadorasSelecionadas,
+  ] = useState<string[]>([]);
+
+  const [
+    categoriasSelecionadas,
+    setCategoriasSelecionadas,
+  ] = useState<string[]>([]);
+
+  const [
+    combustiveisSelecionados,
+    setCombustiveisSelecionados,
+  ] = useState<TipoCombustivel[]>([]);
+
+  const [precoMaximo, setPrecoMaximo] = useState(
+    PRECO_MAXIMO_CATALOGO,
   );
+
+  const [
+    carrosSelecionados,
+    setCarrosSelecionados,
+  ] = useState<number[]>([]);
 
   const carrosExibidos = useMemo(() => {
     const textoBusca = normalizarTexto(busca);
 
     const carrosFiltrados = carros.filter((carro) => {
-      if (!textoBusca) {
-        return true;
-      }
+      const correspondeBusca =
+        !textoBusca ||
+        [
+          carro.montadora,
+          carro.modelo,
+          carro.categoria,
+          carro.motor,
+          carro.cambio,
+          carro.potencia_cv,
+        ].some((campo) =>
+          normalizarTexto(campo).includes(textoBusca),
+        );
 
-      const camposPesquisaveis = [
-        carro.montadora,
-        carro.modelo,
-        carro.categoria,
-        carro.motor,
-      ];
+      const correspondeMontadora =
+        montadorasSelecionadas.length === 0 ||
+        montadorasSelecionadas.includes(
+          carro.montadora,
+        );
 
-      return camposPesquisaveis.some((campo) =>
-        normalizarTexto(campo).includes(textoBusca),
+      const correspondeCategoria =
+        categoriasSelecionadas.length === 0 ||
+        categoriasSelecionadas.includes(
+          carro.categoria,
+        );
+
+      const combustivel =
+        identificarCombustivel(carro);
+
+      const correspondeCombustivel =
+        combustiveisSelecionados.length === 0 ||
+        combustiveisSelecionados.includes(
+          combustivel,
+        );
+
+      const correspondePreco =
+        carro.preco_a_partir_rs <= precoMaximo;
+
+      return (
+        correspondeBusca &&
+        correspondeMontadora &&
+        correspondeCategoria &&
+        correspondeCombustivel &&
+        correspondePreco
       );
     });
 
     if (ordenacao === "menor-preco") {
       return [...carrosFiltrados].sort(
         (carroA, carroB) =>
-          carroA.preco_a_partir_rs - carroB.preco_a_partir_rs,
+          carroA.preco_a_partir_rs -
+          carroB.preco_a_partir_rs,
       );
     }
 
     if (ordenacao === "maior-preco") {
       return [...carrosFiltrados].sort(
         (carroA, carroB) =>
-          carroB.preco_a_partir_rs - carroA.preco_a_partir_rs,
+          carroB.preco_a_partir_rs -
+          carroA.preco_a_partir_rs,
       );
     }
 
     return carrosFiltrados;
-  }, [busca, ordenacao]);
+  }, [
+    busca,
+    categoriasSelecionadas,
+    combustiveisSelecionados,
+    montadorasSelecionadas,
+    ordenacao,
+    precoMaximo,
+  ]);
 
-  const hrefComparacao = `/comparar?ids=${carrosSelecionados.join(",")}`;
+  const hrefComparacao =
+    `/comparar?ids=${carrosSelecionados.join(",")}`;
 
-  function limparPesquisa(): void {
-    setBusca("");
-    setOrdenacao("relevancia");
+  const existemFiltrosAtivos =
+    montadorasSelecionadas.length > 0 ||
+    categoriasSelecionadas.length > 0 ||
+    combustiveisSelecionados.length > 0 ||
+    precoMaximo < PRECO_MAXIMO_CATALOGO;
+
+  function alternarMontadora(
+    montadora: string,
+  ): void {
+    setMontadorasSelecionadas(
+      (montadorasAtuais) => {
+        if (
+          montadorasAtuais.includes(montadora)
+        ) {
+          return montadorasAtuais.filter(
+            (item) => item !== montadora,
+          );
+        }
+
+        return [
+          ...montadorasAtuais,
+          montadora,
+        ];
+      },
+    );
   }
 
-  function alternarComparacao(carroId: number): void {
-    setCarrosSelecionados((selecionadosAtuais) => {
-      const jaSelecionado = selecionadosAtuais.includes(carroId);
+  function alternarCategoria(
+    categoria: string,
+  ): void {
+    setCategoriasSelecionadas(
+      (categoriasAtuais) => {
+        if (
+          categoriasAtuais.includes(categoria)
+        ) {
+          return categoriasAtuais.filter(
+            (item) => item !== categoria,
+          );
+        }
 
-      if (jaSelecionado) {
-        return selecionadosAtuais.filter(
-          (idSelecionado) => idSelecionado !== carroId,
-        );
-      }
+        return [
+          ...categoriasAtuais,
+          categoria,
+        ];
+      },
+    );
+  }
 
-      if (selecionadosAtuais.length >= LIMITE_COMPARACAO) {
-        return selecionadosAtuais;
-      }
+  function alternarCombustivel(
+    combustivel: TipoCombustivel,
+  ): void {
+    setCombustiveisSelecionados(
+      (combustiveisAtuais) => {
+        if (
+          combustiveisAtuais.includes(
+            combustivel,
+          )
+        ) {
+          return combustiveisAtuais.filter(
+            (item) => item !== combustivel,
+          );
+        }
 
-      return [...selecionadosAtuais, carroId];
-    });
+        return [
+          ...combustiveisAtuais,
+          combustivel,
+        ];
+      },
+    );
+  }
+
+  function limparFiltrosLaterais(): void {
+    setMontadorasSelecionadas([]);
+    setCategoriasSelecionadas([]);
+    setCombustiveisSelecionados([]);
+    setPrecoMaximo(PRECO_MAXIMO_CATALOGO);
+  }
+
+  function limparPesquisaCompleta(): void {
+    setBusca("");
+    setOrdenacao("relevancia");
+    limparFiltrosLaterais();
+  }
+
+  function alternarComparacao(
+    carroId: number,
+  ): void {
+    setCarrosSelecionados(
+      (selecionadosAtuais) => {
+        const jaSelecionado =
+          selecionadosAtuais.includes(carroId);
+
+        if (jaSelecionado) {
+          return selecionadosAtuais.filter(
+            (idSelecionado) =>
+              idSelecionado !== carroId,
+          );
+        }
+
+        if (
+          selecionadosAtuais.length >=
+          LIMITE_COMPARACAO
+        ) {
+          return selecionadosAtuais;
+        }
+
+        return [
+          ...selecionadosAtuais,
+          carroId,
+        ];
+      },
+    );
   }
 
   function limparComparacao(): void {
@@ -114,8 +289,9 @@ export default function Home() {
             </h1>
 
             <p className="mt-2 max-w-2xl text-sm leading-relaxed text-slate-500 sm:text-base">
-              Pesquise os veículos disponíveis, compare especificações e
-              consulte o AutoStoreAI para receber recomendações.
+              Pesquise os veículos disponíveis,
+              compare especificações e consulte o
+              AutoStoreAI para receber recomendações.
             </p>
           </div>
 
@@ -151,12 +327,23 @@ export default function Home() {
                 className="h-14 w-full appearance-none rounded-2xl border border-slate-200 bg-white pl-12 pr-10 text-sm font-semibold text-slate-700 shadow-sm outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
                 value={ordenacao}
                 onChange={(event) =>
-                  setOrdenacao(event.target.value as TipoOrdenacao)
+                  setOrdenacao(
+                    event.target
+                      .value as TipoOrdenacao,
+                  )
                 }
               >
-                <option value="relevancia">Mais relevantes</option>
-                <option value="menor-preco">Menor preço</option>
-                <option value="maior-preco">Maior preço</option>
+                <option value="relevancia">
+                  Mais relevantes
+                </option>
+
+                <option value="menor-preco">
+                  Menor preço
+                </option>
+
+                <option value="maior-preco">
+                  Maior preço
+                </option>
               </select>
 
               <svg
@@ -175,13 +362,12 @@ export default function Home() {
           <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <p className="text-sm font-semibold text-slate-700">
-                {carrosExibidos.length}{" "}
-                {carrosExibidos.length === 1
-                  ? "veículo encontrado"
-                  : "veículos encontrados"}
+                {obterTextoQuantidade(
+                  carrosExibidos.length,
+                )}
               </p>
 
-              {busca.trim() !== "" && (
+              {busca.trim() && (
                 <p className="mt-1 text-xs text-slate-500">
                   Resultados para &quot;{busca}&quot;
                 </p>
@@ -212,12 +398,14 @@ export default function Home() {
             <div className="mt-5 flex flex-col gap-4 rounded-2xl border border-blue-200 bg-blue-50 p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between">
               <div>
                 <p className="font-bold text-slate-900">
-                  {carrosSelecionados.length} de {LIMITE_COMPARACAO}{" "}
-                  veículos selecionados
+                  {carrosSelecionados.length} de{" "}
+                  {LIMITE_COMPARACAO} veículos
+                  selecionados
                 </p>
 
                 <p className="mt-1 text-sm text-slate-600">
-                  Selecione de dois a três veículos para comparar.
+                  Selecione de dois a três veículos
+                  para comparar.
                 </p>
               </div>
 
@@ -251,58 +439,121 @@ export default function Home() {
           )}
         </section>
 
-        {carrosExibidos.length > 0 ? (
-          <section className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            {carrosExibidos.map((carro) => {
-              const selecionado = carrosSelecionados.includes(carro.id);
+        <div className="grid items-start gap-6 lg:grid-cols-[270px_minmax(0,1fr)]">
+          <div className="lg:sticky lg:top-24">
+            <FilterSidebar
+              carros={carros}
+              montadorasSelecionadas={
+                montadorasSelecionadas
+              }
+              categoriasSelecionadas={
+                categoriasSelecionadas
+              }
+              combustiveisSelecionados={
+                combustiveisSelecionados
+              }
+              precoMaximo={precoMaximo}
+              onAlternarMontadora={
+                alternarMontadora
+              }
+              onAlternarCategoria={
+                alternarCategoria
+              }
+              onAlternarCombustivel={
+                alternarCombustivel
+              }
+              onPrecoMaximoChange={
+                setPrecoMaximo
+              }
+              onLimparFiltros={
+                limparFiltrosLaterais
+              }
+            />
+          </div>
 
-              const comparacaoDesabilitada =
-                !selecionado &&
-                carrosSelecionados.length >= LIMITE_COMPARACAO;
+          <div className="min-w-0">
+            {carrosExibidos.length > 0 ? (
+              <section className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3">
+                {carrosExibidos.map((carro) => {
+                  const selecionado =
+                    carrosSelecionados.includes(
+                      carro.id,
+                    );
 
-              return (
-                <CarCard
-                  key={carro.id}
-                  carro={carro}
-                  selecionado={selecionado}
-                  comparacaoDesabilitada={comparacaoDesabilitada}
-                  onAlternarComparacao={alternarComparacao}
-                />
-              );
-            })}
-          </section>
-        ) : (
-          <section className="rounded-2xl border border-slate-200 bg-white p-10 text-center shadow-sm">
-            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-blue-50 text-blue-600">
-              <svg
-                aria-hidden="true"
-                viewBox="0 0 24 24"
-                className="h-7 w-7"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1.8"
-              >
-                <circle cx="11" cy="11" r="7" />
-                <path d="m20 20-3.5-3.5" />
-              </svg>
-            </div>
+                  const comparacaoDesabilitada =
+                    !selecionado &&
+                    carrosSelecionados.length >=
+                      LIMITE_COMPARACAO;
 
-            <h2 className="mt-5 text-xl font-bold text-slate-900">
-              Nenhum veículo encontrado
-            </h2>
+                  return (
+                    <CarCard
+                      key={carro.id}
+                      carro={carro}
+                      selecionado={selecionado}
+                      comparacaoDesabilitada={
+                        comparacaoDesabilitada
+                      }
+                      onAlternarComparacao={
+                        alternarComparacao
+                      }
+                    />
+                  );
+                })}
+              </section>
+            ) : (
+              <section className="rounded-2xl border border-slate-200 bg-white p-10 text-center shadow-sm">
+                <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-blue-50 text-blue-600">
+                  <svg
+                    aria-hidden="true"
+                    viewBox="0 0 24 24"
+                    className="h-7 w-7"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1.8"
+                  >
+                    <circle
+                      cx="11"
+                      cy="11"
+                      r="7"
+                    />
 
-            <p className="mt-2 text-slate-600">
-              Tente pesquisar por outra marca, modelo, categoria ou motor.
-            </p>
+                    <path d="m20 20-3.5-3.5" />
+                  </svg>
+                </div>
 
+                <h2 className="mt-5 text-xl font-bold text-slate-900">
+                  Nenhum veículo encontrado
+                </h2>
+
+                <p className="mt-2 text-slate-600">
+                  Tente alterar a pesquisa ou
+                  selecionar outros filtros.
+                </p>
+
+                <button
+                  type="button"
+                  onClick={
+                    limparPesquisaCompleta
+                  }
+                  className="mt-6 rounded-xl bg-blue-600 px-6 py-3 font-semibold text-white transition hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:ring-offset-2"
+                >
+                  Limpar pesquisa e filtros
+                </button>
+              </section>
+            )}
+          </div>
+        </div>
+
+        {existemFiltrosAtivos && (
+          <div className="mt-6 text-center lg:hidden">
             <button
               type="button"
-              onClick={limparPesquisa}
-              className="mt-6 rounded-xl bg-blue-600 px-6 py-3 font-semibold text-white transition hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:ring-offset-2"
+              onClick={limparFiltrosLaterais}
+              className="text-sm font-semibold text-blue-600 transition hover:text-blue-700"
             >
-              Limpar pesquisa
+              Limpar todos os filtros
             </button>
-          </section>
+          </div>
         )}
       </div>
     </main>
