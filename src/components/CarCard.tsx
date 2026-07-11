@@ -120,9 +120,13 @@ export default function CarCard({
   const [modalAberto, setModalAberto] = useState(false);
 
   const nomeCompleto = `${carro.montadora} ${carro.modelo}`;
+
   const energia = identificarEnergia(carro);
+
   const cores = separarLista(carro.cores);
+
   const coresVisiveis = cores.slice(0, 4);
+
   const quantidadeCoresRestantes = Math.max(
     cores.length - coresVisiveis.length,
     0,
@@ -139,7 +143,7 @@ export default function CarCard({
   return (
     <>
       <article
-        className={`flex h-full flex-col overflow-hidden rounded-2xl border bg-white shadow-sm transition hover:-translate-y-1 hover:shadow-lg ${
+        className={`flex h-full min-w-0 flex-col overflow-hidden rounded-2xl border bg-white shadow-sm transition duration-300 hover:-translate-y-1 hover:shadow-lg ${
           selecionado
             ? "border-blue-600 ring-2 ring-blue-100"
             : "border-slate-200"
@@ -148,7 +152,7 @@ export default function CarCard({
         <Link
           href={`/carros/${carro.id}`}
           aria-label={`Ver detalhes de ${nomeCompleto}`}
-          className="group flex flex-1 cursor-pointer flex-col focus:outline-none focus:ring-2 focus:ring-inset focus:ring-blue-600"
+          className="group flex min-w-0 flex-1 cursor-pointer flex-col focus:outline-none focus:ring-2 focus:ring-inset focus:ring-blue-600"
         >
           <div className="relative h-64 w-full overflow-hidden bg-slate-100">
             <Image
@@ -166,14 +170,14 @@ export default function CarCard({
             )}
           </div>
 
-          <div className="flex flex-1 flex-col p-5">
+          <div className="flex min-w-0 flex-1 flex-col p-5">
             <div className="flex items-start justify-between gap-4">
               <div className="min-w-0">
                 <h2 className="truncate text-xl font-bold text-slate-900 transition group-hover:text-blue-600">
                   {carro.modelo}
                 </h2>
 
-                <p className="mt-1 text-sm text-slate-500">
+                <p className="mt-1 text-base text-slate-500">
                   {carro.montadora}
                 </p>
               </div>
@@ -203,28 +207,28 @@ export default function CarCard({
             <div className="mt-4 grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
               <p className="truncate text-slate-500">
                 Motor{" "}
-                <strong className="text-slate-900">
+                <strong className="font-semibold text-slate-900">
                   {resumirTexto(carro.motor, 18)}
                 </strong>
               </p>
 
               <p className="truncate text-slate-500">
                 Potência{" "}
-                <strong className="text-slate-900">
+                <strong className="font-semibold text-slate-900">
                   {resumirTexto(carro.potencia_cv, 14)}
                 </strong>
               </p>
 
               <p className="truncate text-slate-500">
                 Câmbio{" "}
-                <strong className="text-slate-900">
+                <strong className="font-semibold text-slate-900">
                   {resumirTexto(carro.cambio, 14)}
                 </strong>
               </p>
 
               <p className="truncate text-slate-500">
                 Consumo{" "}
-                <strong className="text-slate-900">
+                <strong className="font-semibold text-slate-900">
                   {resumirTexto(carro.consumo, 14)}
                 </strong>
               </p>
@@ -253,23 +257,23 @@ export default function CarCard({
 
         <div className="mx-5 border-t border-slate-200" />
 
-        <div className="grid gap-4 p-5 sm:grid-cols-[1fr_auto] sm:items-end">
-          <div>
+        <div className="grid min-w-0 grid-cols-[minmax(0,1fr)_128px] items-end gap-2 p-5">
+          <div className="min-w-0">
             <p className="text-sm text-slate-500">
               Preço a partir de
             </p>
 
-            <p className="mt-1 text-2xl font-extrabold text-slate-900">
+            <p className="mt-1 whitespace-nowrap text-xl font-semibold tracking-tight text-slate-900">
               {formatarPreco(carro.preco_a_partir_rs)}
             </p>
 
-            <p className="mt-1 text-sm text-slate-500">
+            <p className="mt-1 whitespace-nowrap text-sm text-slate-500">
               ou 60x de{" "}
               {formatarParcela(carro.preco_a_partir_rs)}
             </p>
           </div>
 
-          <div className="flex flex-col gap-2">
+          <div className="flex min-w-0 flex-col gap-2">
             <button
               type="button"
               aria-pressed={selecionado}
@@ -277,7 +281,7 @@ export default function CarCard({
               onClick={() =>
                 onAlternarComparacao(carro.id)
               }
-              className={`min-w-36 rounded-full border px-5 py-2.5 text-sm font-semibold transition focus:outline-none focus:ring-2 focus:ring-blue-600 focus:ring-offset-2 ${
+              className={`flex w-full min-w-0 items-center justify-center rounded-full border px-2 py-2 text-center text-sm font-semibold transition focus:outline-none focus:ring-2 focus:ring-blue-600 focus:ring-offset-2 ${
                 selecionado
                   ? "border-blue-600 bg-blue-600 text-white hover:bg-blue-700"
                   : "border-slate-300 bg-white text-slate-900 hover:border-blue-600 hover:text-blue-600"
@@ -289,7 +293,7 @@ export default function CarCard({
             <button
               type="button"
               onClick={abrirModal}
-              className="min-w-36 rounded-full bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:ring-offset-2"
+              className="flex w-full min-w-0 items-center justify-center whitespace-nowrap rounded-full bg-blue-600 px-2 py-2 text-center text-sm font-semibold text-white transition hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:ring-offset-2"
             >
               Tenho interesse
             </button>
