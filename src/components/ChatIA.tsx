@@ -3,6 +3,7 @@
 import {
   useEffect,
   useMemo,
+  useRef,
   useState,
   type SubmitEvent,
 } from "react";
@@ -48,17 +49,18 @@ interface RespostaChat {
   };
 }
 
+interface SugestoesPerguntasProps {
+  readonly enviando: boolean;
+  readonly onSelecionar: (sugestao: string) => void;
+}
+
 const CHAVE_HISTORICO = "autostore-ai-conversas";
 
 const SUGESTOES_PERGUNTAS = [
-  "Qual carro tem o menor preço inicial?",
-  "Quais cores e qual o consumo do Corolla Cross?",
-  "Compare o Onix e o HB20 para uso urbano.",
-  "Qual SUV elétrico ou híbrido você recomenda?",
+  "Carros elétricos",
+  "Melhor custo-benefício",
+  "SUVs disponíveis",
 ];
-
-const TEXTO_MENSAGEM_INICIAL =
-  "Olá! Sou o AutoStoreAI. Posso ajudar você a encontrar, comparar e conhecer melhor os veículos disponíveis no catálogo.";
 
 const ESTADO_INICIAL: EstadoChat = {
   conversas: [],
@@ -70,20 +72,12 @@ function criarId(): string {
   return `${Date.now()}-${crypto.randomUUID()}`;
 }
 
-function criarMensagemInicial(): Mensagem {
-  return {
-    id: criarId(),
-    autor: "ia",
-    texto: TEXTO_MENSAGEM_INICIAL,
-  };
-}
-
 function criarNovaConversa(): Conversa {
   return {
     id: criarId(),
     titulo: "Nova conversa",
     atualizadaEm: new Date().toISOString(),
-    mensagens: [criarMensagemInicial()],
+    mensagens: [],
   };
 }
 
@@ -110,7 +104,8 @@ function mensagemEhValida(valor: unknown): valor is Mensagem {
 
   return (
     typeof mensagem.id === "string" &&
-    (mensagem.autor === "usuario" || mensagem.autor === "ia") &&
+    (mensagem.autor === "usuario" ||
+      mensagem.autor === "ia") &&
     typeof mensagem.texto === "string"
   );
 }
@@ -137,9 +132,8 @@ function carregarConversasSalvas(): Conversa[] {
   }
 
   try {
-    const conteudoSalvo = window.localStorage.getItem(
-      CHAVE_HISTORICO,
-    );
+    const conteudoSalvo =
+      window.localStorage.getItem(CHAVE_HISTORICO);
 
     if (!conteudoSalvo) {
       return [];
@@ -157,11 +151,94 @@ function carregarConversasSalvas(): Conversa[] {
   }
 }
 
+function IconeAssistente() {
+  return (
+    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-100 text-blue-700">
+      <svg
+        aria-hidden="true"
+        viewBox="0 0 24 24"
+        className="h-6 w-6"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.8"
+      >
+        <circle cx="12" cy="12" r="4" />
+        <path d="M12 2v3" />
+        <path d="M12 19v3" />
+        <path d="M2 12h3" />
+        <path d="M19 12h3" />
+        <path d="m4.93 4.93 2.12 2.12" />
+        <path d="m16.95 16.95 2.12 2.12" />
+        <path d="m19.07 4.93-2.12 2.12" />
+        <path d="m7.05 16.95-2.12 2.12" />
+      </svg>
+    </div>
+  );
+}
+
+function IconeEnviar() {
+  return (
+    <svg
+      aria-hidden="true"
+      viewBox="0 0 24 24"
+      className="h-5 w-5"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+    >
+      <path d="M12 19V5" />
+      <path d="m6 11 6-6 6 6" />
+    </svg>
+  );
+}
+
+function IconeSugestao() {
+  return (
+    <svg
+      aria-hidden="true"
+      viewBox="0 0 24 24"
+      className="h-4 w-4"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+    >
+      <path d="m12 3 1.2 3.8L17 8l-3.8 1.2L12 13l-1.2-3.8L7 8l3.8-1.2L12 3Z" />
+      <path d="m18 14 .7 2.3L21 17l-2.3.7L18 20l-.7-2.3L15 17l2.3-.7L18 14Z" />
+    </svg>
+  );
+}
+
+function SugestoesPerguntas({
+  enviando,
+  onSelecionar,
+}: SugestoesPerguntasProps) {
+  return (
+    <div className="flex flex-wrap justify-center gap-2">
+      {SUGESTOES_PERGUNTAS.map((sugestao) => (
+        <button
+          key={sugestao}
+          type="button"
+          disabled={enviando}
+          onClick={() => onSelecionar(sugestao)}
+          className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-600 shadow-sm transition hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          <IconeSugestao />
+
+          {sugestao}
+        </button>
+      ))}
+    </div>
+  );
+}
+
 export default function ChatIA() {
   const [pergunta, setPergunta] = useState("");
   const [enviando, setEnviando] = useState(false);
+
   const [estadoChat, setEstadoChat] =
     useState<EstadoChat>(ESTADO_INICIAL);
+
+  const fimMensagensRef = useRef<HTMLDivElement>(null);
 
   const {
     conversas,
@@ -225,6 +302,13 @@ export default function ChatIA() {
       })),
     [conversas],
   );
+
+  useEffect(() => {
+    fimMensagensRef.current?.scrollIntoView({
+      behavior: "smooth",
+      block: "end",
+    });
+  }, [conversaAtiva?.mensagens.length, enviando]);
 
   function atualizarConversa(
     conversaId: string,
@@ -325,7 +409,8 @@ export default function ChatIA() {
         }),
       });
 
-      const dados = (await respostaHttp.json()) as RespostaChat;
+      const dados =
+        (await respostaHttp.json()) as RespostaChat;
 
       if (
         !respostaHttp.ok ||
@@ -338,27 +423,21 @@ export default function ChatIA() {
         );
       }
 
-      const mensagemIA: Mensagem = {
+      adicionarMensagem(conversaId, {
         id: criarId(),
         autor: "ia",
         texto: dados.resultado.resposta,
         fontes: dados.resultado.fontes,
-      };
-
-      adicionarMensagem(conversaId, mensagemIA);
+      });
     } catch (error) {
-      const mensagemErro =
-        error instanceof Error
-          ? error.message
-          : "Não foi possível processar sua pergunta.";
-
-      const mensagemIA: Mensagem = {
+      adicionarMensagem(conversaId, {
         id: criarId(),
         autor: "ia",
-        texto: mensagemErro,
-      };
-
-      adicionarMensagem(conversaId, mensagemIA);
+        texto:
+          error instanceof Error
+            ? error.message
+            : "Não foi possível processar sua pergunta.",
+      });
     } finally {
       setEnviando(false);
     }
@@ -380,16 +459,19 @@ export default function ChatIA() {
 
   if (!historicoCarregado || !conversaAtiva) {
     return (
-      <div className="flex min-h-130 items-center justify-center rounded-2xl bg-zinc-50">
-        <p className="text-sm text-zinc-500">
+      <div className="flex min-h-150 items-center justify-center rounded-2xl border border-slate-200 bg-white">
+        <p className="text-sm text-slate-500">
           Carregando conversas...
         </p>
       </div>
     );
   }
 
+  const conversaVazia =
+    conversaAtiva.mensagens.length === 0;
+
   return (
-    <div className="grid gap-5 lg:grid-cols-[280px_minmax(0,1fr)]">
+    <div className="grid min-h-[calc(100vh-118px)] gap-4 lg:grid-cols-[320px_minmax(0,1fr)]">
       <ChatSidebar
         conversas={conversasResumo}
         conversaAtivaId={conversaAtivaId}
@@ -397,127 +479,220 @@ export default function ChatIA() {
         onSelecionarConversa={selecionarConversa}
       />
 
-      <section className="flex min-h-130 min-w-0 flex-col">
-        <div className="mb-4">
-          <p className="mb-3 text-sm font-semibold text-zinc-700">
-            Sugestões de perguntas
-          </p>
-
-          <div className="flex flex-wrap gap-2">
-            {SUGESTOES_PERGUNTAS.map((sugestao) => (
-              <button
-                key={sugestao}
-                type="button"
-                disabled={enviando}
-                onClick={() => usarSugestao(sugestao)}
-                className="rounded-full border border-blue-200 bg-blue-50 px-4 py-2 text-sm font-medium text-blue-700 transition hover:border-blue-300 hover:bg-blue-100 disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                {sugestao}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        <div
-          className="flex-1 space-y-4 overflow-y-auto rounded-2xl bg-zinc-50 p-5"
-          aria-live="polite"
-        >
-          {conversaAtiva.mensagens.map((mensagem) => (
-            <div
-              key={mensagem.id}
-              className={`flex ${
-                mensagem.autor === "usuario"
-                  ? "justify-end"
-                  : "justify-start"
-              }`}
+      <section className="flex min-h-0 min-w-0 flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+        <header className="flex h-20 shrink-0 items-center justify-between border-b border-slate-200 px-7">
+          <div className="flex min-w-0 items-center gap-4">
+            <button
+              type="button"
+              aria-label="Abrir menu de conversas"
+              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-slate-700 transition hover:bg-slate-100 lg:hidden"
             >
-              <div
-                className={`max-w-3/4 rounded-2xl px-4 py-3 text-sm leading-relaxed ${
-                  mensagem.autor === "usuario"
-                    ? "bg-blue-600 text-white"
-                    : "bg-white text-zinc-700 shadow-sm"
-                }`}
+              <svg
+                aria-hidden="true"
+                viewBox="0 0 24 24"
+                className="h-5 w-5"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
               >
-                <p className="whitespace-pre-wrap">
-                  {mensagem.texto}
-                </p>
+                <path d="M4 6h16" />
+                <path d="M4 12h16" />
+                <path d="M4 18h16" />
+              </svg>
+            </button>
 
-                {mensagem.fontes &&
-                  mensagem.fontes.length > 0 && (
-                    <div className="mt-4 border-t border-zinc-200 pt-3">
-                      <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-zinc-500">
-                        Fontes consultadas
-                      </p>
+            <IconeAssistente />
 
-                      <div className="space-y-2">
-                        {mensagem.fontes.map((fonte) => (
-                          <div
-                            key={fonte.id}
-                            className="rounded-xl bg-zinc-50 p-3 text-xs text-zinc-600"
-                          >
-                            <div className="flex flex-wrap items-center justify-between gap-2">
-                              <span className="font-semibold text-zinc-800">
-                                {fonte.arquivo}
-                              </span>
+            <div className="min-w-0">
+              <h1 className="truncate text-lg font-bold text-slate-950">
+                AutoStoreAI
+              </h1>
 
-                              <span>
-                                Relevância:{" "}
-                                {formatarSimilaridade(
-                                  fonte.similaridade,
-                                )}
-                              </span>
-                            </div>
+              <p className="truncate text-sm text-slate-500">
+                Catálogo da loja · respostas em tempo real
+              </p>
+            </div>
+          </div>
 
-                            <p className="mt-2 font-medium text-zinc-700">
-                              Trecho {fonte.trecho}
-                            </p>
+          <div className="hidden items-center gap-2 rounded-full bg-slate-100 px-5 py-3 text-sm font-semibold text-slate-800 sm:flex">
+            <svg
+              aria-hidden="true"
+              viewBox="0 0 24 24"
+              className="h-4 w-4"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+            >
+              <path d="M8 3H3v5" />
+              <path d="m3 3 6 6" />
+              <path d="M16 21h5v-5" />
+              <path d="m21 21-6-6" />
+            </svg>
 
-                            <p className="mt-2 line-clamp-3">
-                              {fonte.conteudo}
-                            </p>
+            Flutuante auto
+          </div>
+        </header>
+
+        {conversaVazia ? (
+          <div className="flex flex-1 flex-col items-center justify-center px-6 pb-24 pt-12">
+            <IconeAssistente />
+
+            <h2 className="mt-6 text-center text-3xl font-semibold tracking-tight text-slate-950">
+              Como posso ajudar?
+            </h2>
+
+            <div className="mt-5">
+              <SugestoesPerguntas
+                enviando={enviando}
+                onSelecionar={(sugestao) =>
+                  void usarSugestao(sugestao)
+                }
+              />
+            </div>
+
+            <form
+              className="mt-6 flex h-18 w-full max-w-3xl items-center rounded-2xl border border-slate-200 bg-white px-3 pl-6 shadow-sm transition focus-within:border-blue-400 focus-within:ring-4 focus-within:ring-blue-50"
+              onSubmit={enviarPergunta}
+            >
+              <input
+                type="text"
+                aria-label="Pergunta para o AutoStoreAI"
+                placeholder="Pergunte sobre preços, consumo, cores, comparações..."
+                value={pergunta}
+                disabled={enviando}
+                maxLength={1000}
+                onChange={(event) =>
+                  setPergunta(event.target.value)
+                }
+                className="min-w-0 flex-1 bg-transparent text-base text-slate-900 outline-none placeholder:text-slate-500 disabled:cursor-not-allowed"
+              />
+
+              <button
+                type="submit"
+                aria-label="Enviar pergunta"
+                disabled={enviando || !pergunta.trim()}
+                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-blue-600 text-white transition hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:ring-offset-2 disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-500"
+              >
+                <IconeEnviar />
+              </button>
+            </form>
+          </div>
+        ) : (
+          <>
+            <div
+              className="flex-1 space-y-5 overflow-y-auto bg-slate-50/50 px-8 py-7"
+              aria-live="polite"
+            >
+              {conversaAtiva.mensagens.map((mensagem) => (
+                <div
+                  key={mensagem.id}
+                  className={`flex ${
+                    mensagem.autor === "usuario"
+                      ? "justify-end"
+                      : "justify-start"
+                  }`}
+                >
+                  <div
+                    className={`max-w-[78%] rounded-2xl px-5 py-4 text-sm leading-7 ${
+                      mensagem.autor === "usuario"
+                        ? "bg-blue-600 text-white"
+                        : "border border-slate-200 bg-white text-slate-700 shadow-sm"
+                    }`}
+                  >
+                    <p className="whitespace-pre-wrap">
+                      {mensagem.texto}
+                    </p>
+
+                    {mensagem.fontes &&
+                      mensagem.fontes.length > 0 && (
+                        <div className="mt-4 border-t border-slate-200 pt-4">
+                          <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-slate-500">
+                            Fontes consultadas
+                          </p>
+
+                          <div className="space-y-2">
+                            {mensagem.fontes.map((fonte) => (
+                              <article
+                                key={fonte.id}
+                                className="rounded-xl bg-slate-50 p-3 text-xs text-slate-600"
+                              >
+                                <div className="flex flex-wrap justify-between gap-2">
+                                  <strong className="text-slate-800">
+                                    {fonte.arquivo}
+                                  </strong>
+
+                                  <span>
+                                    Relevância:{" "}
+                                    {formatarSimilaridade(
+                                      fonte.similaridade,
+                                    )}
+                                  </span>
+                                </div>
+
+                                <p className="mt-2 font-medium text-slate-700">
+                                  Trecho {fonte.trecho}
+                                </p>
+
+                                <p className="mt-2 line-clamp-3">
+                                  {fonte.conteudo}
+                                </p>
+                              </article>
+                            ))}
                           </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-              </div>
+                        </div>
+                      )}
+                  </div>
+                </div>
+              ))}
+
+              {enviando && (
+                <div className="flex justify-start">
+                  <div className="rounded-2xl border border-slate-200 bg-white px-5 py-4 text-sm text-slate-500 shadow-sm">
+                    AutoStoreAI está analisando os documentos...
+                  </div>
+                </div>
+              )}
+
+              <div ref={fimMensagensRef} />
             </div>
-          ))}
 
-          {enviando && (
-            <div className="flex justify-start">
-              <div className="rounded-2xl bg-white px-4 py-3 text-sm text-zinc-500 shadow-sm">
-                AutoStoreAI está analisando os documentos...
-              </div>
+            <div className="border-t border-slate-200 bg-white px-6 py-4">
+              <SugestoesPerguntas
+                enviando={enviando}
+                onSelecionar={(sugestao) =>
+                  void usarSugestao(sugestao)
+                }
+              />
+
+              <form
+                className="mx-auto mt-4 flex h-18 w-full max-w-3xl items-center rounded-2xl border border-slate-200 bg-white px-3 pl-6 shadow-sm transition focus-within:border-blue-400 focus-within:ring-4 focus-within:ring-blue-50"
+                onSubmit={enviarPergunta}
+              >
+                <input
+                  type="text"
+                  aria-label="Pergunta para o AutoStoreAI"
+                  placeholder="Pergunte sobre preços, consumo, cores, comparações..."
+                  value={pergunta}
+                  disabled={enviando}
+                  maxLength={1000}
+                  onChange={(event) =>
+                    setPergunta(event.target.value)
+                  }
+                  className="min-w-0 flex-1 bg-transparent text-base text-slate-900 outline-none placeholder:text-slate-500 disabled:cursor-not-allowed"
+                />
+
+                <button
+                  type="submit"
+                  aria-label="Enviar pergunta"
+                  disabled={enviando || !pergunta.trim()}
+                  className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-blue-600 text-white transition hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:ring-offset-2 disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-500"
+                >
+                  <IconeEnviar />
+                </button>
+              </form>
             </div>
-          )}
-        </div>
-
-        <form
-          className="mt-5 flex gap-3"
-          onSubmit={enviarPergunta}
-        >
-          <input
-            className="min-w-0 flex-1 rounded-xl border border-zinc-300 bg-white px-4 py-3 text-zinc-900 outline-none transition placeholder:text-zinc-400 focus:border-blue-600 disabled:cursor-not-allowed disabled:bg-zinc-100"
-            type="text"
-            aria-label="Pergunta para o AutoStoreAI"
-            placeholder="Pergunte sobre preços, consumo, cores, comparações..."
-            value={pergunta}
-            disabled={enviando}
-            maxLength={1000}
-            onChange={(event) =>
-              setPergunta(event.target.value)
-            }
-          />
-
-          <button
-            className="rounded-xl bg-zinc-900 px-6 py-3 font-semibold text-white transition hover:bg-zinc-700 focus:outline-none focus:ring-2 focus:ring-zinc-900 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-            type="submit"
-            disabled={enviando || !pergunta.trim()}
-          >
-            {enviando ? "Enviando..." : "Enviar"}
-          </button>
-        </form>
+          </>
+        )}
       </section>
     </div>
   );

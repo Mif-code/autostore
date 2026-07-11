@@ -3,12 +3,21 @@
 import {
   useCallback,
   useEffect,
+  useMemo,
   useState,
   type ReactNode,
 } from "react";
 
 import Header from "@/components/Header";
 import type { Lead } from "@/types/Lead";
+
+type StatusLead =
+  | "novo"
+  | "em-contato"
+  | "qualificado"
+  | "descartado";
+
+type FiltroStatus = "todos" | StatusLead;
 
 interface RespostaApiLeads {
   readonly sucesso: boolean;
@@ -23,11 +32,105 @@ interface EstadoLeads {
   readonly mensagemErro: string;
 }
 
+interface ConfiguracaoStatus {
+  readonly nome: string;
+  readonly classeBadge: string;
+  readonly classePonto: string;
+}
+
+interface FiltroStatusConfig {
+  readonly valor: FiltroStatus;
+  readonly nome: string;
+}
+
 const ESTADO_INICIAL: EstadoLeads = {
   leads: [],
   carregando: true,
   mensagemErro: "",
 };
+
+const FILTROS_STATUS: FiltroStatusConfig[] = [
+  {
+    valor: "todos",
+    nome: "Todos",
+  },
+  {
+    valor: "novo",
+    nome: "Novo",
+  },
+  {
+    valor: "em-contato",
+    nome: "Em contato",
+  },
+  {
+    valor: "qualificado",
+    nome: "Qualificado",
+  },
+  {
+    valor: "descartado",
+    nome: "Descartado",
+  },
+];
+
+const CONFIGURACOES_STATUS: Record<
+  StatusLead,
+  ConfiguracaoStatus
+> = {
+  novo: {
+    nome: "Novo",
+    classeBadge:
+      "border-slate-300 bg-slate-100 text-slate-700",
+    classePonto: "bg-slate-500",
+  },
+  "em-contato": {
+    nome: "Em contato",
+    classeBadge:
+      "border-amber-200 bg-amber-50 text-amber-700",
+    classePonto: "bg-amber-500",
+  },
+  qualificado: {
+    nome: "Qualificado",
+    classeBadge:
+      "border-emerald-200 bg-emerald-50 text-emerald-700",
+    classePonto: "bg-emerald-500",
+  },
+  descartado: {
+    nome: "Descartado",
+    classeBadge:
+      "border-red-200 bg-red-50 text-red-700",
+    classePonto: "bg-red-500",
+  },
+};
+
+function normalizarTexto(texto: string): string {
+  return texto
+    .normalize("NFD")
+    .replaceAll("\u0301", "")
+    .replaceAll("\u0300", "")
+    .replaceAll("\u0302", "")
+    .replaceAll("\u0303", "")
+    .replaceAll("\u0308", "")
+    .replaceAll("\u0327", "")
+    .toLowerCase()
+    .trim();
+}
+
+function resumirTexto(
+  texto: string,
+  limite: number,
+): string {
+  const textoLimpo = texto.trim();
+
+  if (!textoLimpo) {
+    return "Sem mensagem.";
+  }
+
+  if (textoLimpo.length <= limite) {
+    return textoLimpo;
+  }
+
+  return `${textoLimpo.slice(0, limite).trim()}...`;
+}
 
 function formatarData(dataIso: string): string {
   const data = new Date(dataIso);
@@ -42,7 +145,69 @@ function formatarData(dataIso: string): string {
   }).format(data);
 }
 
-function limparTelefoneParaLink(telefone: string): string {
+function calcularTempoRecebido(
+  dataIso: string,
+): string {
+  const data = new Date(dataIso);
+
+  if (Number.isNaN(data.getTime())) {
+    return "Data não informada";
+  }
+
+  const diferencaMilissegundos =
+    Date.now() - data.getTime();
+
+  if (diferencaMilissegundos < 0) {
+    return formatarData(dataIso);
+  }
+
+  const minutos = Math.floor(
+    diferencaMilissegundos / 60_000,
+  );
+
+  if (minutos < 1) {
+    return "agora";
+  }
+
+  if (minutos < 60) {
+    return `há ${minutos} min`;
+  }
+
+  const horas = Math.floor(minutos / 60);
+
+  if (horas < 24) {
+    return `há ${horas} h`;
+  }
+
+  const dias = Math.floor(horas / 24);
+
+  if (dias < 30) {
+    return `há ${dias} d`;
+  }
+
+  return formatarData(dataIso);
+}
+
+function ordenarPorDataRecente(
+  leadA: Lead,
+  leadB: Lead,
+): number {
+  const dataA = new Date(leadA.criadoEm).getTime();
+  const dataB = new Date(leadB.criadoEm).getTime();
+
+  if (
+    Number.isNaN(dataA) ||
+    Number.isNaN(dataB)
+  ) {
+    return 0;
+  }
+
+  return dataB - dataA;
+}
+
+function limparTelefone(
+  telefone: string,
+): string {
   return telefone.replaceAll(/\D/g, "");
 }
 
@@ -50,10 +215,20 @@ export default function LeadsPage() {
   const [estado, setEstado] =
     useState<EstadoLeads>(ESTADO_INICIAL);
 
+  const [busca, setBusca] = useState("");
+
+  const [filtroStatus, setFiltroStatus] =
+    useState<FiltroStatus>("todos");
+
+  const [statusPorLead, setStatusPorLead] =
+    useState<Record<string, StatusLead>>({});
+
   const { leads, carregando, mensagemErro } = estado;
 
   const carregarLeads = useCallback(
-    async (mostrarCarregamento = true): Promise<void> => {
+    async (
+      mostrarCarregamento = true,
+    ): Promise<void> => {
       if (mostrarCarregamento) {
         setEstado((estadoAtual) => ({
           ...estadoAtual,
@@ -63,10 +238,13 @@ export default function LeadsPage() {
       }
 
       try {
-        const respostaHttp = await fetch("/api/leads", {
-          method: "GET",
-          cache: "no-store",
-        });
+        const respostaHttp = await fetch(
+          "/api/leads",
+          {
+            method: "GET",
+            cache: "no-store",
+          },
+        );
 
         const dados =
           (await respostaHttp.json()) as RespostaApiLeads;
@@ -109,13 +287,96 @@ export default function LeadsPage() {
     };
   }, [carregarLeads]);
 
+  const leadsOrdenados = useMemo(
+    () =>
+      [...leads].sort(ordenarPorDataRecente),
+    [leads],
+  );
+
+  const contagemPorStatus = useMemo(() => {
+    const contagens: Record<StatusLead, number> = {
+      novo: 0,
+      "em-contato": 0,
+      qualificado: 0,
+      descartado: 0,
+    };
+
+    leads.forEach((lead) => {
+      const status =
+        statusPorLead[lead.id] ?? "novo";
+
+      contagens[status] += 1;
+    });
+
+    return contagens;
+  }, [leads, statusPorLead]);
+
+  const leadsExibidos = useMemo(() => {
+    const textoBusca = normalizarTexto(busca);
+
+    return leadsOrdenados.filter((lead) => {
+      const status =
+        statusPorLead[lead.id] ?? "novo";
+
+      const correspondeStatus =
+        filtroStatus === "todos" ||
+        status === filtroStatus;
+
+      const camposBusca = [
+        lead.nome,
+        lead.email,
+        lead.telefone,
+        lead.veiculoNome,
+        lead.mensagem,
+      ];
+
+      const correspondeBusca =
+        !textoBusca ||
+        camposBusca.some((campo) =>
+          normalizarTexto(campo ?? "").includes(
+            textoBusca,
+          ),
+        );
+
+      return (
+        correspondeStatus &&
+        correspondeBusca
+      );
+    });
+  }, [
+    busca,
+    filtroStatus,
+    leadsOrdenados,
+    statusPorLead,
+  ]);
+
+  function alterarStatus(
+    leadId: string,
+    novoStatus: StatusLead,
+  ): void {
+    setStatusPorLead((statusAtual) => ({
+      ...statusAtual,
+      [leadId]: novoStatus,
+    }));
+  }
+
+  function obterQuantidadeFiltro(
+    filtro: FiltroStatus,
+  ): number {
+    if (filtro === "todos") {
+      return leads.length;
+    }
+
+    return contagemPorStatus[filtro];
+  }
+
   function renderizarCarregamento(): ReactNode {
     return (
       <section className="rounded-2xl border border-slate-200 bg-white p-12 text-center shadow-sm">
         <div className="mx-auto h-10 w-10 animate-spin rounded-full border-4 border-blue-100 border-t-blue-600" />
 
-        <p className="mt-5 font-semibold text-slate-700">
-          Carregando interessados...
+        <p className="mt-5 font-semibold text-slate-600">
+          Carregando leads...
         </p>
       </section>
     );
@@ -124,22 +385,7 @@ export default function LeadsPage() {
   function renderizarErro(): ReactNode {
     return (
       <section className="rounded-2xl border border-red-200 bg-red-50 p-10 text-center">
-        <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-red-100 text-red-700">
-          <svg
-            aria-hidden="true"
-            viewBox="0 0 24 24"
-            className="h-7 w-7"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-          >
-            <circle cx="12" cy="12" r="9" />
-            <path d="M12 7v6" />
-            <path d="M12 17h.01" />
-          </svg>
-        </div>
-
-        <h2 className="mt-5 text-xl font-bold text-red-900">
+        <h2 className="text-xl font-semibold text-red-800">
           Não foi possível carregar os leads
         </h2>
 
@@ -150,7 +396,7 @@ export default function LeadsPage() {
         <button
           type="button"
           onClick={() => void carregarLeads()}
-          className="mt-6 rounded-xl bg-red-700 px-6 py-3 font-semibold text-white transition hover:bg-red-800 focus:outline-none focus:ring-2 focus:ring-red-700 focus:ring-offset-2"
+          className="mt-6 rounded-full bg-red-700 px-6 py-3 text-sm font-semibold text-white transition hover:bg-red-800 focus:outline-none focus:ring-2 focus:ring-red-600 focus:ring-offset-2"
         >
           Tentar novamente
         </button>
@@ -177,133 +423,173 @@ export default function LeadsPage() {
           </svg>
         </div>
 
-        <h2 className="mt-5 text-xl font-bold text-slate-900">
-          Nenhum interessado cadastrado
+        <h2 className="mt-5 text-xl font-semibold text-slate-900">
+          Nenhum lead encontrado
         </h2>
 
-        <p className="mt-2 text-slate-600">
-          Os novos contatos aparecerão aqui após o preenchimento
-          do formulário.
+        <p className="mt-2 text-slate-500">
+          Altere a busca ou o filtro selecionado.
         </p>
       </section>
     );
   }
 
-  function renderizarListaLeads(): ReactNode {
+  function renderizarTabela(): ReactNode {
     return (
-      <section className="space-y-4">
-        {leads.map((lead) => {
-          const telefoneLink = limparTelefoneParaLink(
-            lead.telefone,
-          );
+      <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-225 border-collapse">
+            <thead>
+              <tr className="border-b border-slate-200 bg-slate-50 text-left">
+                <th className="px-5 py-4 text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  Nome
+                </th>
 
-          return (
-            <article
-              key={lead.id}
-              className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:shadow-md sm:p-6"
-            >
-              <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
-                <div className="min-w-0">
-                  <div className="flex flex-wrap items-center gap-3">
-                    <h2 className="text-xl font-bold text-slate-900">
-                      {lead.nome}
-                    </h2>
+                <th className="px-5 py-4 text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  Veículo
+                </th>
 
-                    <span className="rounded-full bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-700">
-                      {lead.veiculoNome}
-                    </span>
-                  </div>
-
-                  <p className="mt-2 text-sm text-slate-500">
-                    Cadastrado em {formatarData(lead.criadoEm)}
-                  </p>
-                </div>
-
-                <div className="flex flex-wrap gap-2">
-                  {lead.email && (
-                    <a
-                      href={`mailto:${lead.email}`}
-                      className="inline-flex items-center gap-2 rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:ring-offset-2"
-                    >
-                      <svg
-                        aria-hidden="true"
-                        viewBox="0 0 24 24"
-                        className="h-4 w-4"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                      >
-                        <rect
-                          x="3"
-                          y="5"
-                          width="18"
-                          height="14"
-                          rx="2"
-                        />
-                        <path d="m3 7 9 6 9-6" />
-                      </svg>
-
-                      Enviar e-mail
-                    </a>
-                  )}
-
-                  {lead.telefone && (
-                    <a
-                      href={`tel:${telefoneLink}`}
-                      className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:ring-offset-2"
-                    >
-                      <svg
-                        aria-hidden="true"
-                        viewBox="0 0 24 24"
-                        className="h-4 w-4"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                      >
-                        <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6A19.79 19.79 0 0 1 2.12 4.18 2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92Z" />
-                      </svg>
-
-                      Ligar
-                    </a>
-                  )}
-                </div>
-              </div>
-
-              <div className="mt-6 grid gap-4 border-t border-slate-200 pt-5 md:grid-cols-2">
-                <div>
-                  <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
-                    E-mail
-                  </p>
-
-                  <p className="mt-1 break-all font-medium text-slate-700">
-                    {lead.email || "Não informado"}
-                  </p>
-                </div>
-
-                <div>
-                  <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
-                    Telefone
-                  </p>
-
-                  <p className="mt-1 font-medium text-slate-700">
-                    {lead.telefone || "Não informado"}
-                  </p>
-                </div>
-              </div>
-
-              <div className="mt-5 rounded-xl bg-slate-50 p-4">
-                <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
+                <th className="px-5 py-4 text-xs font-semibold uppercase tracking-wide text-slate-500">
                   Mensagem
-                </p>
+                </th>
 
-                <p className="mt-2 whitespace-pre-wrap text-sm leading-relaxed text-slate-700">
-                  {lead.mensagem ||
-                    "O interessado não deixou uma mensagem."}
-                </p>
-              </div>
-            </article>
-          );
-        })}
+                <th className="px-5 py-4 text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  Status
+                </th>
+
+                <th className="px-5 py-4 text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  Recebido ↓
+                </th>
+              </tr>
+            </thead>
+
+            <tbody>
+              {leadsExibidos.map((lead) => {
+                const status =
+                  statusPorLead[lead.id] ?? "novo";
+
+                const configuracaoStatus =
+                  CONFIGURACOES_STATUS[status];
+
+                const telefoneLimpo =
+                  limparTelefone(lead.telefone);
+
+                return (
+                  <tr
+                    key={lead.id}
+                    className="border-b border-slate-100 transition last:border-b-0 hover:bg-slate-50"
+                  >
+                    <td className="px-5 py-4 align-middle">
+                      <p className="font-semibold text-slate-900">
+                        {lead.nome}
+                      </p>
+
+                      {lead.email && (
+                        <a
+                          href={`mailto:${lead.email}`}
+                          className="mt-1 block max-w-56 truncate text-xs text-slate-500 transition hover:text-blue-600"
+                        >
+                          {lead.email}
+                        </a>
+                      )}
+
+                      {lead.telefone && (
+                        <a
+                          href={`tel:${telefoneLimpo}`}
+                          className="mt-1 block text-xs text-slate-400 transition hover:text-blue-600"
+                        >
+                          {lead.telefone}
+                        </a>
+                      )}
+                    </td>
+
+                    <td className="px-5 py-4 align-middle">
+                      <p className="max-w-48 truncate text-sm font-medium text-slate-700">
+                        {lead.veiculoNome}
+                      </p>
+                    </td>
+
+                    <td className="px-5 py-4 align-middle">
+                      <p
+                        title={
+                          lead.mensagem ||
+                          "Sem mensagem."
+                        }
+                        className="max-w-80 truncate text-sm text-slate-500"
+                      >
+                        {resumirTexto(
+                          lead.mensagem ?? "",
+                          52,
+                        )}
+                      </p>
+                    </td>
+
+                    <td className="px-5 py-4 align-middle">
+                      <div className="relative inline-flex">
+                        <span
+                          aria-hidden="true"
+                          className={`pointer-events-none absolute left-3 top-1/2 h-1.5 w-1.5 -translate-y-1/2 rounded-full ${configuracaoStatus.classePonto}`}
+                        />
+
+                        <select
+                          aria-label={`Alterar status de ${lead.nome}`}
+                          value={status}
+                          onChange={(event) =>
+                            alterarStatus(
+                              lead.id,
+                              event.target
+                                .value as StatusLead,
+                            )
+                          }
+                          className={`appearance-none rounded-full border py-1.5 pl-7 pr-8 text-xs font-semibold outline-none transition focus:ring-2 focus:ring-blue-500 ${configuracaoStatus.classeBadge}`}
+                        >
+                          <option value="novo">
+                            Novo
+                          </option>
+
+                          <option value="em-contato">
+                            Em contato
+                          </option>
+
+                          <option value="qualificado">
+                            Qualificado
+                          </option>
+
+                          <option value="descartado">
+                            Descartado
+                          </option>
+                        </select>
+
+                        <svg
+                          aria-hidden="true"
+                          viewBox="0 0 24 24"
+                          className="pointer-events-none absolute right-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-current"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                        >
+                          <path d="m7 10 5 5 5-5" />
+                        </svg>
+                      </div>
+                    </td>
+
+                    <td className="whitespace-nowrap px-5 py-4 align-middle text-sm text-slate-500">
+                      <span
+                        title={formatarData(
+                          lead.criadoEm,
+                        )}
+                      >
+                        {calcularTempoRecebido(
+                          lead.criadoEm,
+                        )}
+                      </span>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
       </section>
     );
   }
@@ -317,32 +603,38 @@ export default function LeadsPage() {
       return renderizarErro();
     }
 
-    if (leads.length === 0) {
+    if (leadsExibidos.length === 0) {
       return renderizarListaVazia();
     }
 
-    return renderizarListaLeads();
+    return renderizarTabela();
   }
 
   return (
     <main className="min-h-screen bg-slate-100">
-      <div className="mx-auto max-w-7xl px-4 py-5 sm:px-6 sm:py-7">
+      <div className="mx-auto max-w-7xl px-4 py-5 sm:px-6">
         <Header />
 
         <section className="py-7">
-          <div className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
+          <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
             <div>
-              <p className="text-sm font-semibold text-blue-600">
-                Gestão de contatos
-              </p>
+              <div className="flex flex-wrap items-center gap-3">
+                <h1 className="text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
+                  Leads recebidos
+                </h1>
 
-              <h1 className="mt-1 text-2xl font-extrabold tracking-tight text-slate-900 sm:text-3xl">
-                Interessados nos veículos
-              </h1>
+                <span className="rounded-full border border-slate-200 bg-white px-2.5 py-1 text-xs font-semibold text-slate-500">
+                  {leads.length}
+                </span>
 
-              <p className="mt-2 max-w-2xl text-sm leading-relaxed text-slate-500 sm:text-base">
-                Consulte os contatos enviados pelo formulário
-                &quot;Tenho interesse&quot;.
+                <span className="text-xs text-slate-400">
+                  Painel interno da loja
+                </span>
+              </div>
+
+              <p className="mt-2 max-w-3xl text-sm text-slate-500">
+                Interesses enviados pela vitrine para
+                consulta e atendimento da equipe.
               </p>
             </div>
 
@@ -350,7 +642,7 @@ export default function LeadsPage() {
               type="button"
               disabled={carregando}
               onClick={() => void carregarLeads()}
-              className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-300 bg-white px-5 py-3 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+              className="inline-flex items-center justify-center gap-2 rounded-full border border-slate-300 bg-white px-5 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
             >
               <svg
                 aria-hidden="true"
@@ -368,48 +660,69 @@ export default function LeadsPage() {
 
               {carregando
                 ? "Atualizando..."
-                : "Atualizar lista"}
+                : "Atualizar"}
             </button>
           </div>
 
-          <div className="mt-7 grid gap-4 sm:grid-cols-3">
-            <article className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-              <p className="text-sm font-medium text-slate-500">
-                Total de interessados
-              </p>
+          <div className="mt-7 flex flex-col gap-3 xl:flex-row xl:items-center">
+            <div className="relative w-full xl:max-w-sm">
+              <svg
+                aria-hidden="true"
+                viewBox="0 0 24 24"
+                className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+              >
+                <circle cx="11" cy="11" r="7" />
+                <path d="m20 20-3.5-3.5" />
+              </svg>
 
-              <p className="mt-2 text-3xl font-extrabold text-slate-900">
-                {leads.length}
-              </p>
-            </article>
+              <label
+                htmlFor="busca-leads"
+                className="sr-only"
+              >
+                Buscar leads
+              </label>
 
-            <article className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-              <p className="text-sm font-medium text-slate-500">
-                Com e-mail informado
-              </p>
-
-              <p className="mt-2 text-3xl font-extrabold text-slate-900">
-                {
-                  leads.filter(
-                    (lead) => Boolean(lead.email),
-                  ).length
+              <input
+                id="busca-leads"
+                type="search"
+                value={busca}
+                onChange={(event) =>
+                  setBusca(event.target.value)
                 }
-              </p>
-            </article>
+                placeholder="Buscar por nome, e-mail ou veículo"
+                className="h-11 w-full rounded-full border border-slate-300 bg-white pl-11 pr-4 text-sm text-slate-900 shadow-sm outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
+              />
+            </div>
 
-            <article className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-              <p className="text-sm font-medium text-slate-500">
-                Com telefone informado
-              </p>
+            <div className="flex max-w-full gap-2 overflow-x-auto pb-1">
+              {FILTROS_STATUS.map((filtro) => {
+                const ativo =
+                  filtroStatus === filtro.valor;
 
-              <p className="mt-2 text-3xl font-extrabold text-slate-900">
-                {
-                  leads.filter(
-                    (lead) => Boolean(lead.telefone),
-                  ).length
-                }
-              </p>
-            </article>
+                return (
+                  <button
+                    key={filtro.valor}
+                    type="button"
+                    onClick={() =>
+                      setFiltroStatus(filtro.valor)
+                    }
+                    className={`shrink-0 rounded-full border px-4 py-2 text-xs font-semibold transition ${
+                      ativo
+                        ? "border-blue-600 bg-blue-600 text-white shadow-sm"
+                        : "border-slate-300 bg-white text-slate-600 hover:border-blue-400 hover:text-blue-600"
+                    }`}
+                  >
+                    {filtro.nome} ·{" "}
+                    {obterQuantidadeFiltro(
+                      filtro.valor,
+                    )}
+                  </button>
+                );
+              })}
+            </div>
           </div>
         </section>
 
