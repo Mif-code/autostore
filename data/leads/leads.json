@@ -1,15 +1,5 @@
 [
   {
-    "id": "d5ee44e2-9ab6-4052-a423-8ff257d99511",
-    "nome": "Moisés Ferreira",
-    "email": "moises@teste.com",
-    "telefone": "15999999999",
-    "veiculoId": 1,
-    "veiculoNome": "Toyota Corolla",
-    "mensagem": "Tenho interesse neste veículo.",
-    "criadoEm": "2026-07-11T00:25:23.330Z"
-  },
-  {
     "id": "863a0a23-31c2-4231-906b-0eb881e93dd1",
     "nome": "Moisés Ferreira",
     "email": "moises@teste.com",

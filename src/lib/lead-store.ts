@@ -1,8 +1,15 @@
 import { randomUUID } from "node:crypto";
-import { mkdir, readFile, writeFile } from "node:fs/promises";
+import {
+  mkdir,
+  readFile,
+  writeFile,
+} from "node:fs/promises";
 import path from "node:path";
 
-import type { CriarLeadInput, Lead } from "@/types/Lead";
+import type {
+  CriarLeadInput,
+  Lead,
+} from "@/types/Lead";
 
 const DIRETORIO_LEADS = path.join(
   process.cwd(),
@@ -135,4 +142,32 @@ export async function criarLead(
   await salvarLeads(leads);
 
   return novoLead;
+}
+
+export async function excluirLead(
+  leadId: string,
+): Promise<boolean> {
+  const idNormalizado = leadId.trim();
+
+  if (!idNormalizado) {
+    return false;
+  }
+
+  const leads = await lerLeads();
+
+  const leadExiste = leads.some(
+    (lead) => lead.id === idNormalizado,
+  );
+
+  if (!leadExiste) {
+    return false;
+  }
+
+  const leadsAtualizados = leads.filter(
+    (lead) => lead.id !== idNormalizado,
+  );
+
+  await salvarLeads(leadsAtualizados);
+
+  return true;
 }

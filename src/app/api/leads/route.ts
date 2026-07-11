@@ -1,7 +1,11 @@
 import { NextResponse } from "next/server";
 
 import carrosData from "@/data/carros_catalogo.json";
-import { criarLead, listarLeads } from "@/lib/lead-store";
+import {
+  criarLead,
+  excluirLead,
+  listarLeads,
+} from "@/lib/lead-store";
 import type { Carro } from "@/types/Carro";
 import type { CriarLeadInput } from "@/types/Lead";
 
@@ -228,7 +232,8 @@ export async function POST(request: Request) {
     let corpo: CorpoCriarLead;
 
     try {
-      corpo = (await request.json()) as CorpoCriarLead;
+      corpo =
+        (await request.json()) as CorpoCriarLead;
     } catch {
       return NextResponse.json(
         {
@@ -268,6 +273,55 @@ export async function POST(request: Request) {
       },
       {
         status,
+      },
+    );
+  }
+}
+
+export async function DELETE(request: Request) {
+  try {
+    const url = new URL(request.url);
+    const leadId = url.searchParams.get("id")?.trim();
+
+    if (!leadId) {
+      return NextResponse.json(
+        {
+          sucesso: false,
+          mensagem:
+            "Informe o identificador do lead que deseja excluir.",
+        },
+        {
+          status: 400,
+        },
+      );
+    }
+
+    const leadExcluido = await excluirLead(leadId);
+
+    if (!leadExcluido) {
+      return NextResponse.json(
+        {
+          sucesso: false,
+          mensagem: "O lead informado não foi encontrado.",
+        },
+        {
+          status: 404,
+        },
+      );
+    }
+
+    return NextResponse.json({
+      sucesso: true,
+      mensagem: "Lead excluído com sucesso.",
+    });
+  } catch (error) {
+    return NextResponse.json(
+      {
+        sucesso: false,
+        mensagem: obterMensagemDoErro(error),
+      },
+      {
+        status: 500,
       },
     );
   }

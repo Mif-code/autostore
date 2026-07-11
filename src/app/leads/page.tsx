@@ -205,9 +205,7 @@ function ordenarPorDataRecente(
   return dataB - dataA;
 }
 
-function limparTelefone(
-  telefone: string,
-): string {
+function limparTelefone(telefone: string): string {
   return telefone.replaceAll(/\D/g, "");
 }
 
@@ -222,6 +220,9 @@ export default function LeadsPage() {
 
   const [statusPorLead, setStatusPorLead] =
     useState<Record<string, StatusLead>>({});
+
+  const [leadExcluindoId, setLeadExcluindoId] =
+    useState<string | null>(null);
 
   const { leads, carregando, mensagemErro } = estado;
 
@@ -338,10 +339,7 @@ export default function LeadsPage() {
           ),
         );
 
-      return (
-        correspondeStatus &&
-        correspondeBusca
-      );
+      return correspondeStatus && correspondeBusca;
     });
   }, [
     busca,
@@ -368,6 +366,65 @@ export default function LeadsPage() {
     }
 
     return contagemPorStatus[filtro];
+  }
+
+  async function excluirLeadSelecionado(
+    lead: Lead,
+  ): Promise<void> {
+    const confirmouExclusao = window.confirm(
+      `Deseja realmente excluir o lead de ${lead.nome}? Essa ação não poderá ser desfeita.`,
+    );
+
+    if (!confirmouExclusao) {
+      return;
+    }
+
+    setLeadExcluindoId(lead.id);
+
+    try {
+      const respostaHttp = await fetch(
+        `/api/leads?id=${encodeURIComponent(lead.id)}`,
+        {
+          method: "DELETE",
+        },
+      );
+
+      const dados =
+        (await respostaHttp.json()) as RespostaApiLeads;
+
+      if (!respostaHttp.ok || !dados.sucesso) {
+        throw new Error(
+          dados.mensagem ??
+            "Não foi possível excluir o lead.",
+        );
+      }
+
+      setEstado((estadoAtual) => ({
+        ...estadoAtual,
+        leads: estadoAtual.leads.filter(
+          (leadAtual) => leadAtual.id !== lead.id,
+        ),
+      }));
+
+      setStatusPorLead((statusAtual) => {
+        const statusAtualizado = {
+          ...statusAtual,
+        };
+
+        delete statusAtualizado[lead.id];
+
+        return statusAtualizado;
+      });
+    } catch (error) {
+      const mensagem =
+        error instanceof Error
+          ? error.message
+          : "Não foi possível excluir o lead.";
+
+      window.alert(mensagem);
+    } finally {
+      setLeadExcluindoId(null);
+    }
   }
 
   function renderizarCarregamento(): ReactNode {
@@ -460,6 +517,10 @@ export default function LeadsPage() {
                 <th className="px-5 py-4 text-xs font-semibold uppercase tracking-wide text-slate-500">
                   Recebido ↓
                 </th>
+
+                <th className="px-5 py-4 text-center text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  Ações
+                </th>
               </tr>
             </thead>
 
@@ -473,6 +534,9 @@ export default function LeadsPage() {
 
                 const telefoneLimpo =
                   limparTelefone(lead.telefone);
+
+                const estaExcluindo =
+                  leadExcluindoId === lead.id;
 
                 return (
                   <tr
@@ -583,6 +647,40 @@ export default function LeadsPage() {
                           lead.criadoEm,
                         )}
                       </span>
+                    </td>
+
+                    <td className="px-5 py-4 text-center align-middle">
+                      <button
+                        type="button"
+                        disabled={estaExcluindo}
+                        onClick={() =>
+                          void excluirLeadSelecionado(
+                            lead,
+                          )
+                        }
+                        aria-label={`Excluir lead de ${lead.nome}`}
+                        title="Excluir lead"
+                        className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-red-200 bg-red-50 text-red-600 transition hover:border-red-300 hover:bg-red-100 hover:text-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                      >
+                        {estaExcluindo ? (
+                          <span className="h-4 w-4 animate-spin rounded-full border-2 border-red-200 border-t-red-600" />
+                        ) : (
+                          <svg
+                            aria-hidden="true"
+                            viewBox="0 0 24 24"
+                            className="h-4 w-4"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="1.8"
+                          >
+                            <path d="M3 6h18" />
+                            <path d="M8 6V4h8v2" />
+                            <path d="m19 6-1 14H6L5 6" />
+                            <path d="M10 11v5" />
+                            <path d="M14 11v5" />
+                          </svg>
+                        )}
+                      </button>
                     </td>
                   </tr>
                 );
