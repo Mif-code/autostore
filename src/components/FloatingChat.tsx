@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
@@ -49,27 +50,32 @@ function formatarSimilaridade(valor: number): string {
   return `${Math.round(valor * 100)}%`;
 }
 
-function IconeAssistente() {
+interface IconeAssistenteProps {
+  readonly tamanho?: "pequeno" | "grande";
+}
+
+function IconeAssistente({
+  tamanho = "pequeno",
+}: IconeAssistenteProps) {
+  const classes =
+    tamanho === "grande"
+      ? "h-14 w-14 rounded-2xl"
+      : "h-10 w-10 rounded-xl";
+
+  const tamanhoImagem =
+    tamanho === "grande" ? "56px" : "40px";
+
   return (
-    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-100 text-blue-700">
-      <svg
-        aria-hidden="true"
-        viewBox="0 0 24 24"
-        className="h-6 w-6"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.8"
-      >
-        <circle cx="12" cy="12" r="4" />
-        <path d="M12 2v3" />
-        <path d="M12 19v3" />
-        <path d="M2 12h3" />
-        <path d="M19 12h3" />
-        <path d="m4.93 4.93 2.12 2.12" />
-        <path d="m16.95 16.95 2.12 2.12" />
-        <path d="m19.07 4.93-2.12 2.12" />
-        <path d="m7.05 16.95-2.12 2.12" />
-      </svg>
+    <div
+      className={`relative shrink-0 overflow-hidden bg-blue-50 ${classes}`}
+    >
+      <Image
+        src="/vroom-ai-icon.png"
+        alt="VroomAI"
+        fill
+        sizes={tamanhoImagem}
+        className="object-contain p-1"
+      />
     </div>
   );
 }
@@ -174,7 +180,7 @@ export default function FloatingChat() {
       ) {
         throw new Error(
           dados.mensagem ||
-            "Não foi possível obter uma resposta do AutoStoreAI.",
+            "Não foi possível obter uma resposta do VroomAI.",
         );
       }
 
@@ -240,7 +246,7 @@ export default function FloatingChat() {
 
               <div className="min-w-0">
                 <h2 className="truncate text-base font-bold text-slate-900">
-                  AutoStoreAI
+                  VroomAI
                 </h2>
 
                 <p className="truncate text-xs text-slate-500">
@@ -315,7 +321,7 @@ export default function FloatingChat() {
 
           {mensagens.length === 0 ? (
             <div className="flex flex-1 flex-col items-center justify-center overflow-y-auto px-5 py-8">
-              <IconeAssistente />
+              <IconeAssistente tamanho="grande" />
 
               <h3 className="mt-5 text-center text-2xl font-bold text-slate-900">
                 Como posso ajudar?
@@ -414,7 +420,7 @@ export default function FloatingChat() {
               {enviando && (
                 <div className="flex justify-start">
                   <div className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-500 shadow-sm">
-                    AutoStoreAI está analisando...
+                    VroomAI está analisando...
                   </div>
                 </div>
               )}
@@ -448,7 +454,7 @@ export default function FloatingChat() {
               className="flex min-h-16 items-center gap-2 rounded-2xl border border-slate-200 bg-white p-2 pl-4 shadow-sm transition focus-within:border-blue-400 focus-within:ring-4 focus-within:ring-blue-50"
             >
               <textarea
-                aria-label="Pergunta para o AutoStoreAI"
+                aria-label="Pergunta para o VroomAI"
                 placeholder="Pergunte sobre preços, consumo, cores, comparações..."
                 value={pergunta}
                 disabled={enviando}
@@ -475,28 +481,17 @@ export default function FloatingChat() {
         <button
           type="button"
           onClick={() => setAberto(true)}
-          aria-label="Abrir AutoStoreAI"
-          title="Abrir AutoStoreAI"
-          className="flex h-16 w-16 items-center justify-center rounded-full bg-blue-600 text-white shadow-xl transition hover:scale-105 hover:bg-blue-700 focus:outline-none focus:ring-4 focus:ring-blue-200"
+          aria-label="Abrir VroomAI"
+          title="Abrir VroomAI"
+          className="relative flex h-16 w-16 items-center justify-center overflow-hidden rounded-full border border-slate-200 bg-white shadow-xl transition hover:scale-105 hover:shadow-2xl focus:outline-none focus:ring-4 focus:ring-blue-200"
         >
-          <svg
-            aria-hidden="true"
-            viewBox="0 0 24 24"
-            className="h-7 w-7"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="1.8"
-          >
-            <circle cx="12" cy="12" r="4" />
-            <path d="M12 2v3" />
-            <path d="M12 19v3" />
-            <path d="M2 12h3" />
-            <path d="M19 12h3" />
-            <path d="m4.93 4.93 2.12 2.12" />
-            <path d="m16.95 16.95 2.12 2.12" />
-            <path d="m19.07 4.93-2.12 2.12" />
-            <path d="m7.05 16.95-2.12 2.12" />
-          </svg>
+          <Image
+            src="/vroom-ai-icon.png"
+            alt="VroomAI"
+            fill
+            sizes="64px"
+            className="object-contain p-1.5"
+          />
         </button>
       )}
     </div>

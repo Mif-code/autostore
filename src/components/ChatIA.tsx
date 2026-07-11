@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import {
   useEffect,
   useMemo,
@@ -52,6 +53,10 @@ interface RespostaChat {
 interface SugestoesPerguntasProps {
   readonly enviando: boolean;
   readonly onSelecionar: (sugestao: string) => void;
+}
+
+interface IconeAssistenteProps {
+  readonly tamanho?: "pequeno" | "grande";
 }
 
 const CHAVE_HISTORICO = "autostore-ai-conversas";
@@ -151,27 +156,28 @@ function carregarConversasSalvas(): Conversa[] {
   }
 }
 
-function IconeAssistente() {
+function IconeAssistente({
+  tamanho = "pequeno",
+}: IconeAssistenteProps) {
+  const classes =
+    tamanho === "grande"
+      ? "h-16 w-16 rounded-2xl"
+      : "h-12 w-12 rounded-xl";
+
+  const tamanhoImagem =
+    tamanho === "grande" ? "64px" : "48px";
+
   return (
-    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-100 text-blue-700">
-      <svg
-        aria-hidden="true"
-        viewBox="0 0 24 24"
-        className="h-6 w-6"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.8"
-      >
-        <circle cx="12" cy="12" r="4" />
-        <path d="M12 2v3" />
-        <path d="M12 19v3" />
-        <path d="M2 12h3" />
-        <path d="M19 12h3" />
-        <path d="m4.93 4.93 2.12 2.12" />
-        <path d="m16.95 16.95 2.12 2.12" />
-        <path d="m19.07 4.93-2.12 2.12" />
-        <path d="m7.05 16.95-2.12 2.12" />
-      </svg>
+    <div
+      className={`relative shrink-0 overflow-hidden bg-blue-50 ${classes}`}
+    >
+      <Image
+        src="/vroom-ai-icon.png"
+        alt="VroomAI"
+        fill
+        sizes={tamanhoImagem}
+        className="object-contain p-1"
+      />
     </div>
   );
 }
@@ -419,7 +425,7 @@ export default function ChatIA() {
       ) {
         throw new Error(
           dados.mensagem ||
-            "Não foi possível obter uma resposta do AutoStoreAI.",
+            "Não foi possível obter uma resposta do VroomAI.",
         );
       }
 
@@ -480,7 +486,7 @@ export default function ChatIA() {
       />
 
       <section className="flex min-h-0 min-w-0 flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-        <header className="flex h-20 shrink-0 items-center justify-between border-b border-slate-200 px-7">
+        <header className="flex h-24 shrink-0 items-center justify-between border-b border-slate-200 px-7">
           <div className="flex min-w-0 items-center gap-4">
             <button
               type="button"
@@ -504,8 +510,8 @@ export default function ChatIA() {
             <IconeAssistente />
 
             <div className="min-w-0">
-              <h1 className="truncate text-lg font-bold text-slate-950">
-                AutoStoreAI
+              <h1 className="truncate text-xl font-bold text-slate-950">
+                VroomAI
               </h1>
 
               <p className="truncate text-sm text-slate-500">
@@ -535,7 +541,7 @@ export default function ChatIA() {
 
         {conversaVazia ? (
           <div className="flex flex-1 flex-col items-center justify-center px-6 pb-24 pt-12">
-            <IconeAssistente />
+            <IconeAssistente tamanho="grande" />
 
             <h2 className="mt-6 text-center text-3xl font-semibold tracking-tight text-slate-950">
               Como posso ajudar?
@@ -556,7 +562,7 @@ export default function ChatIA() {
             >
               <input
                 type="text"
-                aria-label="Pergunta para o AutoStoreAI"
+                aria-label="Pergunta para o VroomAI"
                 placeholder="Pergunte sobre preços, consumo, cores, comparações..."
                 value={pergunta}
                 disabled={enviando}
@@ -647,9 +653,19 @@ export default function ChatIA() {
 
               {enviando && (
                 <div className="flex justify-start">
-                  <div className="rounded-2xl border border-slate-200 bg-white px-5 py-4 text-sm text-slate-500 shadow-sm">
-                    AutoStoreAI está analisando os documentos...
-                  </div>
+                  <div className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-white px-5 py-4 text-sm text-slate-500 shadow-sm">
+                    <div className="relative h-7 w-7 shrink-0 overflow-hidden rounded-lg bg-blue-50">
+                      <Image
+                        src="/vroom-ai-icon.png"
+                        alt="VroomAI"
+                        fill
+                        sizes="28px"
+                        className="object-contain p-0.5"
+                      />
+                    </div>
+
+                    VroomAI está analisando os documentos...
+                  </div>1818
                 </div>
               )}
 
@@ -670,7 +686,7 @@ export default function ChatIA() {
               >
                 <input
                   type="text"
-                  aria-label="Pergunta para o AutoStoreAI"
+                  aria-label="Pergunta para o VroomAI"
                   placeholder="Pergunte sobre preços, consumo, cores, comparações..."
                   value={pergunta}
                   disabled={enviando}

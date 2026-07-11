@@ -23,7 +23,7 @@ const links: LinkNavegacao[] = [
     icone: "comparar",
   },
   {
-    nome: "AutoStoreAI",
+    nome: "VroomAI",
     href: "/chat/new",
     icone: "ia",
   },
@@ -77,22 +77,15 @@ function IconeMenu({ tipo }: IconeMenuProps) {
 
   if (tipo === "ia") {
     return (
-      <svg
-        aria-hidden="true"
-        viewBox="0 0 24 24"
-        className="h-4 w-4"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.8"
-      >
-        <path d="M12 3v3" />
-        <path d="M12 18v3" />
-        <path d="M3 12h3" />
-        <path d="M18 12h3" />
-        <path d="m4.2 4.2 2.1 2.1" />
-        <path d="m17.7 17.7 2.1 2.1" />
-        <circle cx="12" cy="12" r="4" />
-      </svg>
+      <span className="relative h-7 w-7 shrink-0 overflow-hidden rounded-full">
+        <Image
+          src="/vroom-ai-icon.png"
+          alt=""
+          fill
+          sizes="20px"
+          className="object-contain"
+        />
+      </span>
     );
   }
 
@@ -109,23 +102,6 @@ function IconeMenu({ tipo }: IconeMenuProps) {
       <circle cx="9" cy="7" r="4" />
       <path d="M19 8v6" />
       <path d="M22 11h-6" />
-    </svg>
-  );
-}
-
-function IconeTema() {
-  return (
-    <svg
-      aria-hidden="true"
-      viewBox="0 0 24 24"
-      className="h-5 w-5"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.8"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79Z" />
     </svg>
   );
 }
@@ -161,48 +137,39 @@ export default function Header() {
   return (
     <header className="sticky top-0 z-50 py-2">
       <div
-        className={`relative flex items-center justify-between gap-3 transition-all duration-300 ease-out ${
+        className={`relative flex min-h-20 items-center border-b border-slate-200 transition-all duration-300 ${
           paginaRolada
-            ? "rounded-3xl border border-slate-200 bg-white/95 px-4 shadow-lg backdrop-blur-md lg:h-16"
-            : "border-b border-slate-200 bg-transparent px-0 shadow-none lg:h-20"
+            ? "rounded-3xl border bg-white/95 px-5 shadow-lg backdrop-blur-md"
+            : "bg-transparent px-0"
         }`}
       >
         <Link
           href="/"
           aria-label="Ir para o catálogo"
-          className="flex shrink-0 items-center"
+          className="absolute left-0 flex shrink-0 items-center"
         >
           <Image
             src="/vroomly-logo.png"
             alt="Vroomly"
-            width={220}
-            height={80}
+            width={160}
+            height={60}
             priority
-            className={`h-auto object-contain transition-all duration-300 ${
-              paginaRolada ? "w-55" : "w-60"
-            }`}
+            className="h-auto w-55 object-contain"
           />
         </Link>
 
         <nav
           aria-label="Navegação principal"
-          className={`flex max-w-[calc(100%-180px)] items-center gap-1 overflow-x-auto rounded-2xl p-1 transition-colors duration-300 lg:absolute lg:left-1/2 lg:max-w-none lg:-translate-x-1/2 ${
-            paginaRolada ? "bg-slate-100" : "bg-slate-100/80"
-          }`}
+          className="absolute left-1/2 flex -translate-x-1/2 items-center gap-2"
         >
           {links.map((link) => {
             const ativo = linkEstaAtivo(link.href);
-            const linkDaIA = link.icone === "ia";
 
             return (
               <Link
                 key={link.href}
                 href={link.href}
-                aria-label={linkDaIA ? "Abrir AutoStoreAI" : undefined}
-                title={linkDaIA ? "AutoStoreAI" : undefined}
-                className={`flex shrink-0 items-center justify-center gap-2 rounded-xl py-2 text-sm font-semibold transition ${
-                  linkDaIA ? "px-3" : "px-3 sm:px-4"
-                } ${
+                className={`flex shrink-0 items-center gap-2 rounded-2xl px-4 py-3 text-sm font-semibold transition ${
                   ativo
                     ? "bg-blue-100 text-blue-700 shadow-sm"
                     : "text-slate-600 hover:bg-white hover:text-slate-900"
@@ -210,7 +177,7 @@ export default function Header() {
               >
                 <IconeMenu tipo={link.icone} />
 
-                {!linkDaIA && <span>{link.nome}</span>}
+                <span>{link.nome}</span>
               </Link>
             );
           })}
@@ -219,10 +186,18 @@ export default function Header() {
         <button
           type="button"
           aria-label="Alternar tema"
-          title="Alternar tema"
-          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-slate-600 transition hover:bg-white hover:text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:ring-offset-2"
+          className="absolute right-0 flex h-10 w-10 items-center justify-center rounded-full text-slate-600 transition hover:bg-white hover:text-slate-900"
         >
-          <IconeTema />
+          <svg
+            aria-hidden="true"
+            viewBox="0 0 24 24"
+            className="h-5 w-5"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.8"
+          >
+            <path d="M21 12.8A8.5 8.5 0 1 1 11.2 3 6.5 6.5 0 0 0 21 12.8Z" />
+          </svg>
         </button>
       </div>
     </header>
