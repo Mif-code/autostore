@@ -1,9 +1,11 @@
-import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
+import CarDetails from "@/components/CarDetails";
+import Header from "@/components/Header";
+
 import carrosData from "@/data/carros_catalogo.json";
-import { Carro } from "@/types/Carro";
+import type { Carro } from "@/types/Carro";
 
 interface CarroDetalhesPageProps {
   readonly params: Promise<{
@@ -17,58 +19,45 @@ export default async function CarroDetalhesPage({
   const { id } = await params;
 
   const carros = carrosData as Carro[];
-  const carro = carros.find((item) => item.id === Number(id));
+
+  const carro = carros.find(
+    (item) => item.id === Number(id),
+  );
 
   if (!carro) {
     notFound();
   }
 
-  return (
-    <main className="min-h-screen bg-zinc-100">
-      <div className="mx-auto max-w-6xl px-6 py-8">
-        <Link href="/" className="text-sm font-semibold text-blue-600">
-          ← Voltar para os veículos
-        </Link>
+  const semelhantes = carros
+    .filter(
+      (item) =>
+        item.id !== carro.id &&
+        (item.categoria === carro.categoria ||
+          item.montadora === carro.montadora),
+    )
+    .slice(0, 3);
 
-        <section className="mt-6 overflow-hidden rounded-2xl bg-white shadow-sm">
-          <div className="relative h-96 w-full">
-            <Image
-              src={`/${carro.imagem_arquivo}`}
-              alt={`${carro.montadora} ${carro.modelo}`}
-              fill
-              className="object-cover"
-              sizes="100vw"
-              priority
+  return (
+    <main className="min-h-screen bg-slate-100">
+      <div className="mx-auto max-w-7xl px-4 py-5 sm:px-6 sm:py-7">
+        <Header />
+
+        <div className="py-7">
+          <Link
+            href="/"
+            className="inline-flex items-center gap-2 text-sm font-semibold text-blue-600 transition hover:text-blue-700"
+          >
+            <span aria-hidden="true">←</span>{" "}
+            Voltar ao catálogo
+          </Link>
+
+          <div className="mt-5">
+            <CarDetails
+              carro={carro}
+              semelhantes={semelhantes}
             />
           </div>
-
-          <div className="p-8">
-            <p className="text-sm font-medium text-blue-600">
-              {carro.montadora}
-            </p>
-
-            <h1 className="mt-2 text-4xl font-bold text-zinc-900">
-              {carro.modelo}
-            </h1>
-
-            <p className="mt-4 text-2xl font-bold text-zinc-900">
-              R$ {carro.preco_a_partir_rs.toLocaleString("pt-BR")}
-            </p>
-
-            <div className="mt-8 grid gap-4 text-zinc-700 md:grid-cols-2">
-              <p>Ano: {carro.ano}</p>
-              <p>Categoria: {carro.categoria}</p>
-              <p>Motor: {carro.motor}</p>
-              <p>Potência: {carro.potencia_cv}</p>
-              <p>Câmbio: {carro.cambio}</p>
-              <p>Consumo: {carro.consumo}</p>
-              <p>Cores: {carro.cores}</p>
-              <p>Itens: {carro.itens}</p>
-            </div>
-
-            <p className="mt-8 text-zinc-700">{carro.desc}</p>
-          </div>
-        </section>
+        </div>
       </div>
     </main>
   );
