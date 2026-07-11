@@ -1,9 +1,16 @@
 "use client";
 
-import { Suspense, useMemo } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
+import {
+  Suspense,
+  useMemo,
+  type ReactNode,
+} from "react";
+import {
+  useRouter,
+  useSearchParams,
+} from "next/navigation";
 
 import Header from "@/components/Header";
 
@@ -11,28 +18,125 @@ import carrosData from "@/data/carros_catalogo.json";
 import type { Carro } from "@/types/Carro";
 
 const carros = carrosData as Carro[];
+const LIMITE_COMPARACAO = 3;
+
+interface ItemLinhaComparacao {
+  readonly chave: string;
+  readonly conteudo: ReactNode;
+}
 
 interface LinhaComparacaoProps {
   readonly titulo: string;
-  readonly valores: string[];
+  readonly itens: ItemLinhaComparacao[];
+}
+
+interface SecaoComparacaoProps {
+  readonly titulo: string;
+  readonly children: ReactNode;
+}
+
+function formatarPreco(valor: number): string {
+  return new Intl.NumberFormat("pt-BR", {
+    style: "currency",
+    currency: "BRL",
+    maximumFractionDigits: 0,
+  }).format(valor);
+}
+
+function identificarEnergia(carro: Carro): string {
+  const motor = carro.motor.toLowerCase();
+
+  if (
+    motor.includes("híbrido") ||
+    motor.includes("hibrido")
+  ) {
+    return "Híbrido";
+  }
+
+  if (
+    motor.includes("elétrico") ||
+    motor.includes("eletrico") ||
+    motor.includes("bateria")
+  ) {
+    return "Elétrico";
+  }
+
+  if (motor.includes("diesel")) {
+    return "Diesel";
+  }
+
+  if (motor.includes("flex")) {
+    return "Flex";
+  }
+
+  return "Gasolina";
+}
+
+function extrairMaiorNumero(texto: string): number {
+  const numerosEncontrados =
+    texto.match(/\d+(?:[.,]\d+)?/g) ?? [];
+
+  const numeros = numerosEncontrados
+    .map((numero) =>
+      Number(numero.replace(",", ".")),
+    )
+    .filter((numero) =>
+      Number.isFinite(numero),
+    );
+
+  if (numeros.length === 0) {
+    return 0;
+  }
+
+  return Math.max(...numeros);
+}
+
+function transformarItensEmTexto(itens: string): string {
+  return itens
+    .split(",")
+    .map((item) => item.trim())
+    .filter((item) => item.length > 0)
+    .join(" · ");
+}
+
+function SecaoComparacao({
+  titulo,
+  children,
+}: SecaoComparacaoProps) {
+  return (
+    <section>
+      <h2 className="px-4 pb-3 pt-6 text-lg font-bold text-slate-900">
+        {titulo}
+      </h2>
+
+      <div className="overflow-hidden rounded-xl">
+        {children}
+      </div>
+    </section>
+  );
 }
 
 function LinhaComparacao({
   titulo,
-  valores,
+  itens,
 }: LinhaComparacaoProps) {
   return (
-    <div className="grid border-t border-zinc-200 lg:grid-cols-4">
-      <div className="bg-zinc-50 p-4 font-semibold text-zinc-900">
+    <div
+      className="grid border-b border-slate-100 last:border-b-0"
+      style={{
+        gridTemplateColumns: `150px repeat(${itens.length}, minmax(220px, 1fr))`,
+      }}
+    >
+      <div className="bg-slate-50 px-4 py-3 text-sm font-medium text-slate-500">
         {titulo}
       </div>
 
-      {valores.map((valor, indice) => (
+      {itens.map((item) => (
         <div
-          key={`${titulo}-${indice}`}
-          className="border-t border-zinc-100 p-4 text-sm text-zinc-700 lg:border-l lg:border-t-0"
+          key={`${titulo}-${item.chave}`}
+          className="border-l border-slate-100 bg-white px-4 py-3 text-sm leading-relaxed text-slate-900"
         >
-          {valor}
+          {item.conteudo}
         </div>
       ))}
     </div>
@@ -40,31 +144,220 @@ function LinhaComparacao({
 }
 
 function ConteudoComparacao() {
+  const router = useRouter();
   const searchParams = useSearchParams();
 
   const carrosSelecionados = useMemo(() => {
-    const idsRecebidos = searchParams.get("ids") ?? "";
+    const idsRecebidos =
+      searchParams.get("ids") ?? "";
 
     const ids = idsRecebidos
       .split(",")
       .map(Number)
       .filter((id) => Number.isInteger(id))
-      .slice(0, 3);
+      .slice(0, LIMITE_COMPARACAO);
 
     return ids
-      .map((id) => carros.find((carro) => carro.id === id))
-      .filter((carro): carro is Carro => carro !== undefined);
+      .map((id) =>
+        carros.find((carro) => carro.id === id),
+      )
+      .filter(
+        (carro): carro is Carro =>
+          carro !== undefined,
+      );
   }, [searchParams]);
+
+  const menorPreco = useMemo(() => {
+    if (carrosSelecionados.length === 0) {
+      return 0;
+    }
+
+    return Math.min(
+      ...carrosSelecionados.map(
+        (carro) => carro.preco_a_partir_rs,
+      ),
+    );
+  }, [carrosSelecionados]);
+
+  const maiorPotencia = useMemo(() => {
+    if (carrosSelecionados.length === 0) {
+      return 0;
+    }
+
+    return Math.max(
+      ...carrosSelecionados.map((carro) =>
+        extrairMaiorNumero(carro.potencia_cv),
+      ),
+    );
+  }, [carrosSelecionados]);
+
+  const melhorConsumo = useMemo(() => {
+    if (carrosSelecionados.length === 0) {
+      return 0;
+    }
+
+    return Math.max(
+      ...carrosSelecionados.map((carro) =>
+        extrairMaiorNumero(carro.consumo),
+      ),
+    );
+  }, [carrosSelecionados]);
+
+  const itensPreco = carrosSelecionados.map(
+    (carro): ItemLinhaComparacao => ({
+      chave: String(carro.id),
+      conteudo: (
+        <div className="flex flex-wrap items-center gap-2">
+          <strong className="text-base">
+            {formatarPreco(
+              carro.preco_a_partir_rs,
+            )}
+          </strong>
+
+          {carro.preco_a_partir_rs ===
+            menorPreco && (
+            <span className="rounded-full bg-emerald-100 px-2 py-1 text-xs font-semibold text-emerald-700">
+              menor preço
+            </span>
+          )}
+        </div>
+      ),
+    }),
+  );
+
+  const itensCategoria = carrosSelecionados.map(
+    (carro): ItemLinhaComparacao => ({
+      chave: String(carro.id),
+      conteudo: carro.categoria,
+    }),
+  );
+
+  const itensAno = carrosSelecionados.map(
+    (carro): ItemLinhaComparacao => ({
+      chave: String(carro.id),
+      conteudo: String(carro.ano),
+    }),
+  );
+
+  const itensMotor = carrosSelecionados.map(
+    (carro): ItemLinhaComparacao => ({
+      chave: String(carro.id),
+      conteudo: carro.motor,
+    }),
+  );
+
+  const itensPotencia = carrosSelecionados.map(
+    (carro): ItemLinhaComparacao => {
+      const potencia =
+        extrairMaiorNumero(carro.potencia_cv);
+
+      return {
+        chave: String(carro.id),
+        conteudo: (
+          <div className="flex flex-wrap items-center gap-2">
+            <span>{carro.potencia_cv}</span>
+
+            {potencia === maiorPotencia && (
+              <span className="rounded-full bg-emerald-100 px-2 py-1 text-xs font-semibold text-emerald-700">
+                mais potente
+              </span>
+            )}
+          </div>
+        ),
+      };
+    },
+  );
+
+  const itensCambio = carrosSelecionados.map(
+    (carro): ItemLinhaComparacao => ({
+      chave: String(carro.id),
+      conteudo: carro.cambio,
+    }),
+  );
+
+  const itensEnergia = carrosSelecionados.map(
+    (carro): ItemLinhaComparacao => ({
+      chave: String(carro.id),
+      conteudo: identificarEnergia(carro),
+    }),
+  );
+
+  const itensConsumo = carrosSelecionados.map(
+    (carro): ItemLinhaComparacao => {
+      const consumo =
+        extrairMaiorNumero(carro.consumo);
+
+      return {
+        chave: String(carro.id),
+        conteudo: (
+          <div>
+            <strong className="font-semibold">
+              {carro.consumo}
+            </strong>
+
+            {consumo === melhorConsumo && (
+              <div className="mt-2">
+                <span className="rounded-full bg-emerald-100 px-2 py-1 text-xs font-semibold text-emerald-700">
+                  mais econômico
+                </span>
+              </div>
+            )}
+          </div>
+        ),
+      };
+    },
+  );
+
+  const itensCores = carrosSelecionados.map(
+    (carro): ItemLinhaComparacao => ({
+      chave: String(carro.id),
+      conteudo: carro.cores,
+    }),
+  );
+
+  const itensPrincipais = carrosSelecionados.map(
+    (carro): ItemLinhaComparacao => ({
+      chave: String(carro.id),
+      conteudo: transformarItensEmTexto(
+        carro.itens,
+      ),
+    }),
+  );
+
+  const itensPerfil = carrosSelecionados.map(
+    (carro): ItemLinhaComparacao => ({
+      chave: String(carro.id),
+      conteudo: carro.desc,
+    }),
+  );
+
+  function removerVeiculo(
+    carroId: number,
+  ): void {
+    const idsAtualizados = carrosSelecionados
+      .filter((carro) => carro.id !== carroId)
+      .map((carro) => carro.id);
+
+    if (idsAtualizados.length < 2) {
+      router.push("/");
+      return;
+    }
+
+    router.replace(
+      `/comparar?ids=${idsAtualizados.join(",")}`,
+    );
+  }
 
   if (carrosSelecionados.length < 2) {
     return (
-      <section className="rounded-2xl border border-zinc-200 bg-white p-10 text-center shadow-sm">
-        <h1 className="text-2xl font-bold text-zinc-900">
+      <section className="rounded-2xl border border-slate-200 bg-white p-10 text-center shadow-sm">
+        <h1 className="text-2xl font-bold text-slate-900">
           Selecione pelo menos dois veículos
         </h1>
 
-        <p className="mt-3 text-zinc-600">
-          Volte ao catálogo e escolha de dois a três carros para comparar.
+        <p className="mt-3 text-slate-600">
+          Volte ao catálogo e escolha de dois a três
+          carros para comparar.
         </p>
 
         <Link
@@ -77,151 +370,182 @@ function ConteudoComparacao() {
     );
   }
 
-  const quantidadeColunas =
-    carrosSelecionados.length === 2
-      ? "md:grid-cols-2"
-      : "md:grid-cols-3";
+  const tituloComparacao = carrosSelecionados
+    .map((carro) => carro.modelo)
+    .join(" vs ");
 
   return (
     <>
-      <section className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+      <section className="mb-5 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <p className="text-sm font-semibold uppercase tracking-wide text-blue-600">
-            Comparação
-          </p>
-
-          <h1 className="mt-2 text-3xl font-bold text-zinc-900">
-            Compare os veículos
+          <h1 className="text-2xl font-extrabold text-slate-900 sm:text-3xl">
+            {tituloComparacao}
           </h1>
 
-          <p className="mt-2 text-zinc-600">
-            Analise os principais dados lado a lado antes de decidir.
+          <p className="mt-1 text-sm text-slate-500">
+            {carrosSelecionados.length} de{" "}
+            {LIMITE_COMPARACAO} veículos selecionados.
           </p>
         </div>
 
         <Link
           href="/"
-          className="rounded-xl border border-zinc-300 bg-white px-5 py-3 text-center text-sm font-semibold text-zinc-700 transition hover:bg-zinc-100 focus:outline-none focus:ring-2 focus:ring-zinc-500 focus:ring-offset-2"
+          className="inline-flex items-center justify-center gap-2 rounded-full border border-slate-300 bg-white px-5 py-3 text-sm font-semibold text-slate-900 shadow-sm transition hover:border-blue-500 hover:text-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:ring-offset-2"
         >
-          Alterar seleção
+          <svg
+            aria-hidden="true"
+            viewBox="0 0 24 24"
+            className="h-4 w-4"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+          >
+            <path d="M12 5v14" />
+            <path d="M5 12h14" />
+          </svg>
+
+          <span>Adicionar do catálogo</span>
         </Link>
       </section>
 
-      <section className="overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-sm">
-        <div className={`grid gap-4 p-5 ${quantidadeColunas}`}>
-          {carrosSelecionados.map((carro) => (
-            <article
-              key={carro.id}
-              className="overflow-hidden rounded-2xl border border-zinc-200 bg-white"
-            >
-              <div className="relative h-48 w-full">
-                <Image
-                  src={`/${carro.imagem_arquivo}`}
-                  alt={`${carro.montadora} ${carro.modelo}`}
-                  fill
-                  className="object-cover"
-                  sizes="(max-width: 768px) 100vw, 33vw"
-                />
-              </div>
-
-              <div className="p-5">
-                <p className="text-sm font-semibold text-blue-600">
-                  {carro.montadora}
-                </p>
-
-                <h2 className="mt-1 text-2xl font-bold text-zinc-900">
-                  {carro.modelo}
-                </h2>
-
-                <p className="mt-3 text-xl font-bold text-zinc-900">
-                  R$ {carro.preco_a_partir_rs.toLocaleString("pt-BR")}
-                </p>
-
-                <Link
-                  href={`/carros/${carro.id}`}
-                  className="mt-5 inline-flex rounded-xl bg-zinc-900 px-5 py-3 text-sm font-semibold text-white transition hover:bg-zinc-700 focus:outline-none focus:ring-2 focus:ring-zinc-900 focus:ring-offset-2"
-                >
-                  Ver detalhes
-                </Link>
-              </div>
-            </article>
-          ))}
-        </div>
-
+      <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
         <div className="overflow-x-auto">
-          <div className="min-w-3xl">
-            <LinhaComparacao
-              titulo="Montadora"
-              valores={carrosSelecionados.map(
-                (carro) => carro.montadora,
-              )}
-            />
+          <div className="min-w-225">
+            <div
+              className="grid gap-3"
+              style={{
+                gridTemplateColumns: `150px repeat(${carrosSelecionados.length}, minmax(220px, 1fr))`,
+              }}
+            >
+              <div />
 
-            <LinhaComparacao
-              titulo="Modelo"
-              valores={carrosSelecionados.map(
-                (carro) => carro.modelo,
-              )}
-            />
+              {carrosSelecionados.map((carro) => (
+                <article
+                  key={carro.id}
+                  className="rounded-xl border border-slate-200 bg-white p-3"
+                >
+                  <div className="relative h-40 overflow-hidden rounded-lg bg-slate-100">
+                    <Image
+                      src={`/${carro.imagem_arquivo}`}
+                      alt={`${carro.montadora} ${carro.modelo}`}
+                      fill
+                      className="object-cover"
+                      sizes="280px"
+                    />
+                  </div>
 
-            <LinhaComparacao
-              titulo="Categoria"
-              valores={carrosSelecionados.map(
-                (carro) => carro.categoria,
-              )}
-            />
+                  <div className="mt-4 flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="text-xs font-medium text-slate-500">
+                        {carro.montadora}
+                      </p>
 
-            <LinhaComparacao
-              titulo="Ano"
-              valores={carrosSelecionados.map((carro) =>
-                String(carro.ano),
-              )}
-            />
+                      <h2 className="mt-1 truncate text-lg font-bold text-slate-900">
+                        {carro.modelo}
+                      </h2>
+                    </div>
 
-            <LinhaComparacao
-              titulo="Motor"
-              valores={carrosSelecionados.map(
-                (carro) => carro.motor,
-              )}
-            />
+                    <button
+                      type="button"
+                      aria-label={`Remover ${carro.modelo} da comparação`}
+                      onClick={() =>
+                        removerVeiculo(carro.id)
+                      }
+                      className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-slate-500 transition hover:bg-slate-100 hover:text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-600"
+                    >
+                      <svg
+                        aria-hidden="true"
+                        viewBox="0 0 24 24"
+                        className="h-4 w-4"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                      >
+                        <path d="M6 6l12 12" />
+                        <path d="M18 6 6 18" />
+                      </svg>
+                    </button>
+                  </div>
 
-            <LinhaComparacao
-              titulo="Potência"
-              valores={carrosSelecionados.map(
-                (carro) => carro.potencia_cv,
-              )}
-            />
+                  <div className="mt-4 grid grid-cols-2 gap-2">
+                    <Link
+                      href={`/carros/${carro.id}`}
+                      className="flex items-center justify-center rounded-full border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-900 transition hover:border-blue-500 hover:text-blue-600"
+                    >
+                      Detalhes
+                    </Link>
 
-            <LinhaComparacao
-              titulo="Câmbio"
-              valores={carrosSelecionados.map(
-                (carro) => carro.cambio,
-              )}
-            />
+                    <Link
+                      href={`/chat/new?carro=${carro.id}`}
+                      className="flex items-center justify-center rounded-full bg-blue-50 px-3 py-2 text-sm font-medium text-blue-700 transition hover:bg-blue-100"
+                    >
+                      AutoStoreAI
+                    </Link>
+                  </div>
+                </article>
+              ))}
+            </div>
 
-            <LinhaComparacao
-              titulo="Consumo"
-              valores={carrosSelecionados.map(
-                (carro) => carro.consumo,
-              )}
-            />
+            <SecaoComparacao titulo="Visão geral">
+              <LinhaComparacao
+                titulo="Preço a partir de"
+                itens={itensPreco}
+              />
 
-            <LinhaComparacao
-              titulo="Preço inicial"
-              valores={carrosSelecionados.map(
-                (carro) =>
-                  `R$ ${carro.preco_a_partir_rs.toLocaleString(
-                    "pt-BR",
-                  )}`,
-              )}
-            />
+              <LinhaComparacao
+                titulo="Categoria"
+                itens={itensCategoria}
+              />
 
-            <LinhaComparacao
-              titulo="Cores"
-              valores={carrosSelecionados.map(
-                (carro) => carro.cores,
-              )}
-            />
+              <LinhaComparacao
+                titulo="Ano"
+                itens={itensAno}
+              />
+            </SecaoComparacao>
+
+            <SecaoComparacao titulo="Mecânica e consumo">
+              <LinhaComparacao
+                titulo="Motor"
+                itens={itensMotor}
+              />
+
+              <LinhaComparacao
+                titulo="Potência"
+                itens={itensPotencia}
+              />
+
+              <LinhaComparacao
+                titulo="Câmbio"
+                itens={itensCambio}
+              />
+
+              <LinhaComparacao
+                titulo="Combustível / energia"
+                itens={itensEnergia}
+              />
+
+              <LinhaComparacao
+                titulo="Consumo"
+                itens={itensConsumo}
+              />
+            </SecaoComparacao>
+
+            <SecaoComparacao titulo="Cores e equipamentos">
+              <LinhaComparacao
+                titulo="Cores disponíveis"
+                itens={itensCores}
+              />
+
+              <LinhaComparacao
+                titulo="Itens principais"
+                itens={itensPrincipais}
+              />
+
+              <LinhaComparacao
+                titulo="Perfil do comprador"
+                itens={itensPerfil}
+              />
+            </SecaoComparacao>
           </div>
         </div>
       </section>
@@ -231,18 +555,18 @@ function ConteudoComparacao() {
 
 export default function CompararPage() {
   return (
-    <main className="min-h-screen bg-zinc-100">
-      <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 sm:py-8">
+    <main className="min-h-screen bg-slate-100">
+      <div className="mx-auto max-w-7xl px-4 py-5 sm:px-6">
         <Header />
 
-        <div className="mt-8">
+        <div className="mt-6">
           <Suspense
             fallback={
-              <div className="rounded-2xl border border-zinc-200 bg-white p-10 text-center shadow-sm">
-                <p className="text-zinc-600">
+              <section className="rounded-2xl border border-slate-200 bg-white p-10 text-center shadow-sm">
+                <p className="text-slate-600">
                   Carregando comparação...
                 </p>
-              </div>
+              </section>
             }
           >
             <ConteudoComparacao />
