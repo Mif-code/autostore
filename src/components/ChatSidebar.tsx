@@ -9,6 +9,7 @@ interface ChatSidebarProps {
   readonly conversaAtivaId: string;
   readonly onNovaConversa: () => void;
   readonly onSelecionarConversa: (conversaId: string) => void;
+  readonly onLimparHistorico: () => void;
 }
 
 function formatarData(dataIso: string): string {
@@ -31,6 +32,7 @@ export default function ChatSidebar({
   conversaAtivaId,
   onNovaConversa,
   onSelecionarConversa,
+  onLimparHistorico,
 }: ChatSidebarProps) {
   return (
     <aside className="flex h-full min-h-130 flex-col rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
@@ -63,7 +65,8 @@ export default function ChatSidebar({
       <div className="mt-3 flex-1 space-y-2 overflow-y-auto">
         {conversas.length > 0 ? (
           conversas.map((conversa) => {
-            const ativa = conversa.id === conversaAtivaId;
+            const ativa =
+              conversa.id === conversaAtivaId;
 
             return (
               <button
@@ -89,7 +92,9 @@ export default function ChatSidebar({
                 </p>
 
                 <p className="mt-1 text-xs text-slate-500">
-                  {formatarData(conversa.atualizadaEm)}
+                  {formatarData(
+                    conversa.atualizadaEm,
+                  )}
                 </p>
               </button>
             );
@@ -101,15 +106,39 @@ export default function ChatSidebar({
             </p>
 
             <p className="mt-1 text-xs leading-relaxed text-slate-500">
-              Inicie uma conversa com o AutoStoreAI para criar o
-              histórico.
+              Inicie uma conversa com o AutoStoreAI
+              para criar o histórico.
             </p>
           </div>
         )}
       </div>
 
       <div className="mt-4 border-t border-slate-200 pt-4">
-        <p className="text-xs leading-relaxed text-slate-500">
+        <button
+          type="button"
+          onClick={onLimparHistorico}
+          disabled={conversas.length === 0}
+          className="flex w-full items-center justify-center gap-2 rounded-xl border border-red-200 bg-white px-4 py-2.5 text-sm font-semibold text-red-600 transition hover:border-red-300 hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          <svg
+            aria-hidden="true"
+            viewBox="0 0 24 24"
+            className="h-4 w-4"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.8"
+          >
+            <path d="M3 6h18" />
+            <path d="M8 6V4h8v2" />
+            <path d="m19 6-1 14H6L5 6" />
+            <path d="M10 11v5" />
+            <path d="M14 11v5" />
+          </svg>
+
+          Limpar histórico
+        </button>
+
+        <p className="mt-3 text-xs leading-relaxed text-slate-500">
           O histórico é salvo somente neste navegador.
         </p>
       </div>

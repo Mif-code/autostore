@@ -59,7 +59,8 @@ interface IconeAssistenteProps {
   readonly tamanho?: "pequeno" | "grande";
 }
 
-const CHAVE_HISTORICO = "autostore-ai-conversas";
+const CHAVE_HISTORICO =
+  "autostore-ai-conversas";
 
 const SUGESTOES_PERGUNTAS = [
   "Carros elétricos",
@@ -86,21 +87,29 @@ function criarNovaConversa(): Conversa {
   };
 }
 
-function criarTituloConversa(pergunta: string): string {
+function criarTituloConversa(
+  pergunta: string,
+): string {
   const limite = 42;
 
   if (pergunta.length <= limite) {
     return pergunta;
   }
 
-  return `${pergunta.slice(0, limite).trim()}...`;
+  return `${pergunta
+    .slice(0, limite)
+    .trim()}...`;
 }
 
-function formatarSimilaridade(valor: number): string {
+function formatarSimilaridade(
+  valor: number,
+): string {
   return `${Math.round(valor * 100)}%`;
 }
 
-function mensagemEhValida(valor: unknown): valor is Mensagem {
+function mensagemEhValida(
+  valor: unknown,
+): valor is Mensagem {
   if (!valor || typeof valor !== "object") {
     return false;
   }
@@ -115,7 +124,9 @@ function mensagemEhValida(valor: unknown): valor is Mensagem {
   );
 }
 
-function conversaEhValida(valor: unknown): valor is Conversa {
+function conversaEhValida(
+  valor: unknown,
+): valor is Conversa {
   if (!valor || typeof valor !== "object") {
     return false;
   }
@@ -138,13 +149,16 @@ function carregarConversasSalvas(): Conversa[] {
 
   try {
     const conteudoSalvo =
-      window.localStorage.getItem(CHAVE_HISTORICO);
+      window.localStorage.getItem(
+        CHAVE_HISTORICO,
+      );
 
     if (!conteudoSalvo) {
       return [];
     }
 
-    const dados: unknown = JSON.parse(conteudoSalvo);
+    const dados: unknown =
+      JSON.parse(conteudoSalvo);
 
     if (!Array.isArray(dados)) {
       return [];
@@ -220,31 +234,39 @@ function SugestoesPerguntas({
 }: SugestoesPerguntasProps) {
   return (
     <div className="flex flex-wrap justify-center gap-2">
-      {SUGESTOES_PERGUNTAS.map((sugestao) => (
-        <button
-          key={sugestao}
-          type="button"
-          disabled={enviando}
-          onClick={() => onSelecionar(sugestao)}
-          className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-600 shadow-sm transition hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
-        >
-          <IconeSugestao />
+      {SUGESTOES_PERGUNTAS.map(
+        (sugestao) => (
+          <button
+            key={sugestao}
+            type="button"
+            disabled={enviando}
+            onClick={() =>
+              onSelecionar(sugestao)
+            }
+            className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-600 shadow-sm transition hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            <IconeSugestao />
 
-          {sugestao}
-        </button>
-      ))}
+            {sugestao}
+          </button>
+        ),
+      )}
     </div>
   );
 }
 
 export default function ChatIA() {
-  const [pergunta, setPergunta] = useState("");
-  const [enviando, setEnviando] = useState(false);
+  const [pergunta, setPergunta] =
+    useState("");
+
+  const [enviando, setEnviando] =
+    useState(false);
 
   const [estadoChat, setEstadoChat] =
     useState<EstadoChat>(ESTADO_INICIAL);
 
-  const fimMensagensRef = useRef<HTMLDivElement>(null);
+  const fimMensagensRef =
+    useRef<HTMLDivElement>(null);
 
   const {
     conversas,
@@ -253,27 +275,31 @@ export default function ChatIA() {
   } = estadoChat;
 
   useEffect(() => {
-    const temporizador = window.setTimeout(() => {
-      const conversasSalvas = carregarConversasSalvas();
+    const temporizador =
+      window.setTimeout(() => {
+        const conversasSalvas =
+          carregarConversasSalvas();
 
-      if (conversasSalvas.length > 0) {
+        if (conversasSalvas.length > 0) {
+          setEstadoChat({
+            conversas: conversasSalvas,
+            conversaAtivaId:
+              conversasSalvas[0].id,
+            historicoCarregado: true,
+          });
+
+          return;
+        }
+
+        const novaConversa =
+          criarNovaConversa();
+
         setEstadoChat({
-          conversas: conversasSalvas,
-          conversaAtivaId: conversasSalvas[0].id,
+          conversas: [novaConversa],
+          conversaAtivaId: novaConversa.id,
           historicoCarregado: true,
         });
-
-        return;
-      }
-
-      const novaConversa = criarNovaConversa();
-
-      setEstadoChat({
-        conversas: [novaConversa],
-        conversaAtivaId: novaConversa.id,
-        historicoCarregado: true,
-      });
-    }, 0);
+      }, 0);
 
     return () => {
       window.clearTimeout(temporizador);
@@ -281,7 +307,10 @@ export default function ChatIA() {
   }, []);
 
   useEffect(() => {
-    if (!historicoCarregado || conversas.length === 0) {
+    if (
+      !historicoCarregado ||
+      conversas.length === 0
+    ) {
       return;
     }
 
@@ -294,7 +323,8 @@ export default function ChatIA() {
   const conversaAtiva = useMemo(
     () =>
       conversas.find(
-        (conversa) => conversa.id === conversaAtivaId,
+        (conversa) =>
+          conversa.id === conversaAtivaId,
       ),
     [conversas, conversaAtivaId],
   );
@@ -314,19 +344,26 @@ export default function ChatIA() {
       behavior: "smooth",
       block: "end",
     });
-  }, [conversaAtiva?.mensagens.length, enviando]);
+  }, [
+    conversaAtiva?.mensagens.length,
+    enviando,
+  ]);
 
   function atualizarConversa(
     conversaId: string,
-    atualizar: (conversa: Conversa) => Conversa,
+    atualizar: (
+      conversa: Conversa,
+    ) => Conversa,
   ): void {
     setEstadoChat((estadoAtual) => ({
       ...estadoAtual,
-      conversas: estadoAtual.conversas.map((conversa) =>
-        conversa.id === conversaId
-          ? atualizar(conversa)
-          : conversa,
-      ),
+      conversas:
+        estadoAtual.conversas.map(
+          (conversa) =>
+            conversa.id === conversaId
+              ? atualizar(conversa)
+              : conversa,
+        ),
     }));
   }
 
@@ -335,12 +372,19 @@ export default function ChatIA() {
     mensagem: Mensagem,
     titulo?: string,
   ): void {
-    atualizarConversa(conversaId, (conversa) => ({
-      ...conversa,
-      titulo: titulo ?? conversa.titulo,
-      atualizadaEm: new Date().toISOString(),
-      mensagens: [...conversa.mensagens, mensagem],
-    }));
+    atualizarConversa(
+      conversaId,
+      (conversa) => ({
+        ...conversa,
+        titulo: titulo ?? conversa.titulo,
+        atualizadaEm:
+          new Date().toISOString(),
+        mensagens: [
+          ...conversa.mensagens,
+          mensagem,
+        ],
+      }),
+    );
   }
 
   function iniciarNovaConversa(): void {
@@ -348,7 +392,8 @@ export default function ChatIA() {
       return;
     }
 
-    const novaConversa = criarNovaConversa();
+    const novaConversa =
+      criarNovaConversa();
 
     setEstadoChat((estadoAtual) => ({
       ...estadoAtual,
@@ -362,7 +407,38 @@ export default function ChatIA() {
     setPergunta("");
   }
 
-  function selecionarConversa(conversaId: string): void {
+  function limparHistorico(): void {
+    if (enviando) {
+      return;
+    }
+
+    const confirmou = window.confirm(
+      "Deseja realmente apagar todo o histórico de conversas?",
+    );
+
+    if (!confirmou) {
+      return;
+    }
+
+    const novaConversa =
+      criarNovaConversa();
+
+    window.localStorage.removeItem(
+      CHAVE_HISTORICO,
+    );
+
+    setEstadoChat({
+      conversas: [novaConversa],
+      conversaAtivaId: novaConversa.id,
+      historicoCarregado: true,
+    });
+
+    setPergunta("");
+  }
+
+  function selecionarConversa(
+    conversaId: string,
+  ): void {
     if (enviando) {
       return;
     }
@@ -378,7 +454,11 @@ export default function ChatIA() {
   async function processarPergunta(
     perguntaAtual: string,
   ): Promise<void> {
-    if (!perguntaAtual || enviando || !conversaAtiva) {
+    if (
+      !perguntaAtual ||
+      enviando ||
+      !conversaAtiva
+    ) {
       return;
     }
 
@@ -391,8 +471,11 @@ export default function ChatIA() {
     };
 
     const titulo =
-      conversaAtiva.titulo === "Nova conversa"
-        ? criarTituloConversa(perguntaAtual)
+      conversaAtiva.titulo ===
+      "Nova conversa"
+        ? criarTituloConversa(
+            perguntaAtual,
+          )
         : conversaAtiva.titulo;
 
     adicionarMensagem(
@@ -405,15 +488,19 @@ export default function ChatIA() {
     setEnviando(true);
 
     try {
-      const respostaHttp = await fetch("/api/chat", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
+      const respostaHttp = await fetch(
+        "/api/chat",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type":
+              "application/json",
+          },
+          body: JSON.stringify({
+            pergunta: perguntaAtual,
+          }),
         },
-        body: JSON.stringify({
-          pergunta: perguntaAtual,
-        }),
-      });
+      );
 
       const dados =
         (await respostaHttp.json()) as RespostaChat;
@@ -432,8 +519,10 @@ export default function ChatIA() {
       adicionarMensagem(conversaId, {
         id: criarId(),
         autor: "ia",
-        texto: dados.resultado.resposta,
-        fontes: dados.resultado.fontes,
+        texto:
+          dados.resultado.resposta,
+        fontes:
+          dados.resultado.fontes,
       });
     } catch (error) {
       adicionarMensagem(conversaId, {
@@ -454,7 +543,9 @@ export default function ChatIA() {
   ): Promise<void> {
     event.preventDefault();
 
-    await processarPergunta(pergunta.trim());
+    await processarPergunta(
+      pergunta.trim(),
+    );
   }
 
   async function usarSugestao(
@@ -463,7 +554,10 @@ export default function ChatIA() {
     await processarPergunta(sugestao);
   }
 
-  if (!historicoCarregado || !conversaAtiva) {
+  if (
+    !historicoCarregado ||
+    !conversaAtiva
+  ) {
     return (
       <div className="flex min-h-150 items-center justify-center rounded-2xl border border-slate-200 bg-white">
         <p className="text-sm text-slate-500">
@@ -482,7 +576,12 @@ export default function ChatIA() {
         conversas={conversasResumo}
         conversaAtivaId={conversaAtivaId}
         onNovaConversa={iniciarNovaConversa}
-        onSelecionarConversa={selecionarConversa}
+        onSelecionarConversa={
+          selecionarConversa
+        }
+        onLimparHistorico={
+          limparHistorico
+        }
       />
 
       <section className="flex min-h-0 min-w-0 flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
@@ -515,7 +614,8 @@ export default function ChatIA() {
               </h1>
 
               <p className="truncate text-sm text-slate-500">
-                Catálogo da loja · respostas em tempo real
+                Catálogo da loja · respostas em
+                tempo real
               </p>
             </div>
           </div>
@@ -551,7 +651,9 @@ export default function ChatIA() {
               <SugestoesPerguntas
                 enviando={enviando}
                 onSelecionar={(sugestao) =>
-                  void usarSugestao(sugestao)
+                  void usarSugestao(
+                    sugestao,
+                  )
                 }
               />
             </div>
@@ -568,7 +670,9 @@ export default function ChatIA() {
                 disabled={enviando}
                 maxLength={1000}
                 onChange={(event) =>
-                  setPergunta(event.target.value)
+                  setPergunta(
+                    event.target.value,
+                  )
                 }
                 className="min-w-0 flex-1 bg-transparent text-base text-slate-900 outline-none placeholder:text-slate-500 disabled:cursor-not-allowed"
               />
@@ -576,7 +680,10 @@ export default function ChatIA() {
               <button
                 type="submit"
                 aria-label="Enviar pergunta"
-                disabled={enviando || !pergunta.trim()}
+                disabled={
+                  enviando ||
+                  !pergunta.trim()
+                }
                 className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-blue-600 text-white transition hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:ring-offset-2 disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-500"
               >
                 <IconeEnviar />
@@ -589,67 +696,83 @@ export default function ChatIA() {
               className="flex-1 space-y-5 overflow-y-auto bg-slate-50/50 px-8 py-7"
               aria-live="polite"
             >
-              {conversaAtiva.mensagens.map((mensagem) => (
-                <div
-                  key={mensagem.id}
-                  className={`flex ${
-                    mensagem.autor === "usuario"
-                      ? "justify-end"
-                      : "justify-start"
-                  }`}
-                >
+              {conversaAtiva.mensagens.map(
+                (mensagem) => (
                   <div
-                    className={`max-w-[78%] rounded-2xl px-5 py-4 text-sm leading-7 ${
-                      mensagem.autor === "usuario"
-                        ? "bg-blue-600 text-white"
-                        : "border border-slate-200 bg-white text-slate-700 shadow-sm"
+                    key={mensagem.id}
+                    className={`flex ${
+                      mensagem.autor ===
+                      "usuario"
+                        ? "justify-end"
+                        : "justify-start"
                     }`}
                   >
-                    <p className="whitespace-pre-wrap">
-                      {mensagem.texto}
-                    </p>
+                    <div
+                      className={`max-w-[78%] rounded-2xl px-5 py-4 text-sm leading-7 ${
+                        mensagem.autor ===
+                        "usuario"
+                          ? "bg-blue-600 text-white"
+                          : "border border-slate-200 bg-white text-slate-700 shadow-sm"
+                      }`}
+                    >
+                      <p className="whitespace-pre-wrap">
+                        {mensagem.texto}
+                      </p>
 
-                    {mensagem.fontes &&
-                      mensagem.fontes.length > 0 && (
-                        <div className="mt-4 border-t border-slate-200 pt-4">
-                          <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-slate-500">
-                            Fontes consultadas
-                          </p>
+                      {mensagem.fontes &&
+                        mensagem.fontes
+                          .length > 0 && (
+                          <div className="mt-4 border-t border-slate-200 pt-4">
+                            <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-slate-500">
+                              Fontes consultadas
+                            </p>
 
-                          <div className="space-y-2">
-                            {mensagem.fontes.map((fonte) => (
-                              <article
-                                key={fonte.id}
-                                className="rounded-xl bg-slate-50 p-3 text-xs text-slate-600"
-                              >
-                                <div className="flex flex-wrap justify-between gap-2">
-                                  <strong className="text-slate-800">
-                                    {fonte.arquivo}
-                                  </strong>
+                            <div className="space-y-2">
+                              {mensagem.fontes.map(
+                                (fonte) => (
+                                  <article
+                                    key={
+                                      fonte.id
+                                    }
+                                    className="rounded-xl bg-slate-50 p-3 text-xs text-slate-600"
+                                  >
+                                    <div className="flex flex-wrap justify-between gap-2">
+                                      <strong className="text-slate-800">
+                                        {
+                                          fonte.arquivo
+                                        }
+                                      </strong>
 
-                                  <span>
-                                    Relevância:{" "}
-                                    {formatarSimilaridade(
-                                      fonte.similaridade,
-                                    )}
-                                  </span>
-                                </div>
+                                      <span>
+                                        Relevância:{" "}
+                                        {formatarSimilaridade(
+                                          fonte.similaridade,
+                                        )}
+                                      </span>
+                                    </div>
 
-                                <p className="mt-2 font-medium text-slate-700">
-                                  Trecho {fonte.trecho}
-                                </p>
+                                    <p className="mt-2 font-medium text-slate-700">
+                                      Trecho{" "}
+                                      {
+                                        fonte.trecho
+                                      }
+                                    </p>
 
-                                <p className="mt-2 line-clamp-3">
-                                  {fonte.conteudo}
-                                </p>
-                              </article>
-                            ))}
+                                    <p className="mt-2 line-clamp-3">
+                                      {
+                                        fonte.conteudo
+                                      }
+                                    </p>
+                                  </article>
+                                ),
+                              )}
+                            </div>
                           </div>
-                        </div>
-                      )}
+                        )}
+                    </div>
                   </div>
-                </div>
-              ))}
+                ),
+              )}
 
               {enviando && (
                 <div className="flex justify-start">
@@ -664,8 +787,9 @@ export default function ChatIA() {
                       />
                     </div>
 
-                    VroomAI está analisando os documentos...
-                  </div>1818
+                    VroomAI está analisando os
+                    documentos...
+                  </div>
                 </div>
               )}
 
@@ -676,7 +800,9 @@ export default function ChatIA() {
               <SugestoesPerguntas
                 enviando={enviando}
                 onSelecionar={(sugestao) =>
-                  void usarSugestao(sugestao)
+                  void usarSugestao(
+                    sugestao,
+                  )
                 }
               />
 
@@ -692,7 +818,9 @@ export default function ChatIA() {
                   disabled={enviando}
                   maxLength={1000}
                   onChange={(event) =>
-                    setPergunta(event.target.value)
+                    setPergunta(
+                      event.target.value,
+                    )
                   }
                   className="min-w-0 flex-1 bg-transparent text-base text-slate-900 outline-none placeholder:text-slate-500 disabled:cursor-not-allowed"
                 />
@@ -700,7 +828,10 @@ export default function ChatIA() {
                 <button
                   type="submit"
                   aria-label="Enviar pergunta"
-                  disabled={enviando || !pergunta.trim()}
+                  disabled={
+                    enviando ||
+                    !pergunta.trim()
+                  }
                   className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-blue-600 text-white transition hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:ring-offset-2 disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-500"
                 >
                   <IconeEnviar />
