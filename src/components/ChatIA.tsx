@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import Link from "next/link";
 import {
   useEffect,
   useMemo,
@@ -10,6 +11,9 @@ import {
 } from "react";
 
 import ChatSidebar from "@/components/ChatSidebar";
+
+import carrosData from "@/data/carros_catalogo.json";
+import type { Carro } from "@/types/Carro";
 
 interface FonteRag {
   readonly id: string;
@@ -24,6 +28,9 @@ interface Mensagem {
   readonly autor: "usuario" | "ia";
   readonly texto: string;
   readonly fontes?: FonteRag[];
+  readonly veiculosRelacionados?: number[];
+  readonly opcoesRefinamento?: string[];
+  readonly opcoesVeiculos?: number[];
 }
 
 interface Conversa {
@@ -59,9 +66,19 @@ interface IconeAssistenteProps {
   readonly tamanho?: "pequeno" | "grande";
 }
 
+interface CardVeiculoChatProps {
+  readonly carro: Carro;
+}
+
+interface FontesDiscretasProps {
+  readonly fontes: FonteRag[];
+}
+
 type EventoEnvioFormulario = Parameters<
   NonNullable<ComponentProps<"form">["onSubmit"]>
 >[0];
+
+const carros = carrosData as Carro[];
 
 const CHAVE_HISTORICO = "autostore-ai-conversas";
 
@@ -69,6 +86,13 @@ const SUGESTOES_PERGUNTAS = [
   "Carros elétricos",
   "Melhor custo-benefício",
   "SUVs disponíveis",
+];
+
+const OPCOES_REFINAMENTO = [
+  "Quero um SUV",
+  "Quero um sedã",
+  "Quero um carro elétrico",
+  "Busco melhor custo-benefício",
 ];
 
 const ESTADO_INICIAL: EstadoChat = {
@@ -114,26 +138,321 @@ function obterSaudacaoPorHorario(): string {
   return "Boa noite";
 }
 
+function formatarPreco(valor: number): string {
+  return new Intl.NumberFormat("pt-BR", {
+    style: "currency",
+    currency: "BRL",
+    maximumFractionDigits: 0,
+  }).format(valor);
+}
+
 function formatarSimilaridade(valor: number): string {
   return `${Math.round(valor * 100)}%`;
 }
 
-function mensagemEhValida(valor: unknown): valor is Mensagem {
+function separarLista(valor: string): string[] {
+  return valor
+    .split(",")
+    .map((item) => item.trim())
+    .filter((item) => item.length > 0);
+}
+
+function normalizarTexto(texto: string): string {
+  return texto
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .trim();
+}
+
+function identificarEnergia(carro: Carro): string {
+  const texto = normalizarTexto(
+    `${carro.motor} ${carro.desc}`,
+  );
+
+  if (texto.includes("hibrido")) {
+    return "Híbrido";
+  }
+
+  if (
+    texto.includes("eletrico") ||
+    texto.includes("bateria")
+  ) {
+    return "Elétrico";
+  }
+
+  if (texto.includes("diesel")) {
+    return "Diesel";
+  }
+
+  if (texto.includes("flex")) {
+    return "Flex";
+  }
+
+  return "Gasolina";
+}
+
+function obterClasseEnergia(energia: string): string {
+  if (
+    energia === "Elétrico" ||
+    energia === "Híbrido"
+  ) {
+    return "border-emerald-200 bg-emerald-50 text-emerald-700";
+  }
+
+  return "border-slate-200 bg-slate-100 text-slate-700";
+}
+
+function obterClasseCor(cor: string): string {
+  const corNormalizada = normalizarTexto(cor);
+
+  if (corNormalizada.includes("branco")) {
+    return "border-slate-300 bg-white";
+  }
+
+  if (corNormalizada.includes("prata")) {
+    return "border-slate-400 bg-slate-300";
+  }
+
+  if (corNormalizada.includes("cinza")) {
+    return "border-slate-500 bg-slate-500";
+  }
+
+  if (corNormalizada.includes("preto")) {
+    return "border-slate-900 bg-slate-900";
+  }
+
+  if (corNormalizada.includes("azul")) {
+    return "border-blue-900 bg-blue-900";
+  }
+
+  if (corNormalizada.includes("vermelho")) {
+    return "border-red-700 bg-red-700";
+  }
+
+  if (corNormalizada.includes("verde")) {
+    return "border-emerald-700 bg-emerald-700";
+  }
+
+  return "border-slate-400 bg-slate-200";
+}
+
+function perguntaPedeRecomendacao(
+  pergunta: string,
+): boolean {
+  const texto = normalizarTexto(pergunta);
+
+  const expressoes = [
+    "qual carro",
+    "qual veiculo",
+    "me recomenda",
+    "voce recomenda",
+    "qual recomenda",
+    "quero um carro",
+    "quero comprar",
+    "me ajude a escolher",
+    "ajude a escolher",
+    "qual devo comprar",
+    "qual e melhor",
+    "carro bom",
+    "veiculo bom",
+  ];
+
+  return expressoes.some((expressao) =>
+    texto.includes(expressao),
+  );
+}
+
+function perguntaTemRestricaoClara(
+  pergunta: string,
+): boolean {
+  const texto = normalizarTexto(pergunta);
+
+  const mencionaModelo = carros.some((carro) => {
+    const modelo = normalizarTexto(carro.modelo);
+
+    const nomeCompleto = normalizarTexto(
+      `${carro.montadora} ${carro.modelo}`,
+    );
+
+    return (
+      texto.includes(nomeCompleto) ||
+      texto.includes(modelo)
+    );
+  });
+
+  const criteriosClaros = [
+    "suv",
+    "seda",
+    "sedan",
+    "hatch",
+    "picape",
+    "eletrico",
+    "hibrido",
+    "diesel",
+    "flex",
+    "gasolina",
+    "autonomia",
+    "consumo",
+    "potencia",
+    "preco",
+    "orcamento",
+    "custo-beneficio",
+    "custo beneficio",
+    "mais barato",
+    "mais economico",
+  ];
+
+  const mencionaCriterio = criteriosClaros.some(
+    (criterio) => texto.includes(criterio),
+  );
+
+  const mencionaValor = /\d/.test(texto);
+
+  return (
+    mencionaModelo ||
+    mencionaCriterio ||
+    mencionaValor
+  );
+}
+
+function perguntaEhAmbigua(
+  pergunta: string,
+): boolean {
+  return (
+    perguntaPedeRecomendacao(pergunta) &&
+    !perguntaTemRestricaoClara(pergunta)
+  );
+}
+
+function encontrarOpcoesPorMontadora(
+  pergunta: string,
+): Carro[] {
+  const texto = normalizarTexto(pergunta);
+
+  const montadoras = Array.from(
+    new Set(
+      carros.map((carro) => carro.montadora),
+    ),
+  );
+
+  const montadoraEncontrada = montadoras.find(
+    (montadora) =>
+      texto.includes(normalizarTexto(montadora)),
+  );
+
+  if (!montadoraEncontrada) {
+    return [];
+  }
+
+  const carrosDaMontadora = carros.filter(
+    (carro) =>
+      normalizarTexto(carro.montadora) ===
+      normalizarTexto(montadoraEncontrada),
+  );
+
+  const modeloFoiInformado =
+    carrosDaMontadora.some((carro) => {
+      const modelo = normalizarTexto(carro.modelo);
+
+      const nomeCompleto = normalizarTexto(
+        `${carro.montadora} ${carro.modelo}`,
+      );
+
+      return (
+        texto.includes(nomeCompleto) ||
+        texto.includes(modelo)
+      );
+    });
+
+  if (modeloFoiInformado) {
+    return [];
+  }
+
+  return carrosDaMontadora.slice(0, 3);
+}
+
+function encontrarVeiculosRelacionados(
+  pergunta: string,
+  resposta: string,
+): number[] {
+  const textoCompleto = normalizarTexto(
+    `${pergunta} ${resposta}`,
+  );
+
+  const carrosOrdenados = [...carros].sort(
+    (carroA, carroB) =>
+      carroB.modelo.length - carroA.modelo.length,
+  );
+
+  const idsEncontrados: number[] = [];
+
+  carrosOrdenados.forEach((carro) => {
+    const modelo = normalizarTexto(carro.modelo);
+
+    const nomeCompleto = normalizarTexto(
+      `${carro.montadora} ${carro.modelo}`,
+    );
+
+    const encontrou =
+      textoCompleto.includes(nomeCompleto) ||
+      textoCompleto.includes(modelo);
+
+    if (
+      encontrou &&
+      !idsEncontrados.includes(carro.id)
+    ) {
+      idsEncontrados.push(carro.id);
+    }
+  });
+
+  return idsEncontrados.slice(0, 3);
+}
+
+function mensagemEhValida(
+  valor: unknown,
+): valor is Mensagem {
   if (!valor || typeof valor !== "object") {
     return false;
   }
 
   const mensagem = valor as Partial<Mensagem>;
 
+  const veiculosValidos =
+    mensagem.veiculosRelacionados === undefined ||
+    (Array.isArray(mensagem.veiculosRelacionados) &&
+      mensagem.veiculosRelacionados.every(
+        (id) => typeof id === "number",
+      ));
+
+  const opcoesValidas =
+    mensagem.opcoesRefinamento === undefined ||
+    (Array.isArray(mensagem.opcoesRefinamento) &&
+      mensagem.opcoesRefinamento.every(
+        (opcao) => typeof opcao === "string",
+      ));
+
+  const opcoesVeiculosValidas =
+    mensagem.opcoesVeiculos === undefined ||
+    (Array.isArray(mensagem.opcoesVeiculos) &&
+      mensagem.opcoesVeiculos.every(
+        (id) => typeof id === "number",
+      ));
+
   return (
     typeof mensagem.id === "string" &&
     (mensagem.autor === "usuario" ||
       mensagem.autor === "ia") &&
-    typeof mensagem.texto === "string"
+    typeof mensagem.texto === "string" &&
+    veiculosValidos &&
+    opcoesValidas &&
+    opcoesVeiculosValidas
   );
 }
 
-function conversaEhValida(valor: unknown): valor is Conversa {
+function conversaEhValida(
+  valor: unknown,
+): valor is Conversa {
   if (!valor || typeof valor !== "object") {
     return false;
   }
@@ -231,9 +550,218 @@ function IconeSugestao() {
       strokeLinejoin="round"
     >
       <path d="m12 3 1.2 3.8L17 8l-3.8 1.2L12 13l-1.2-3.8L7 8l3.8-1.2L12 3Z" />
-
       <path d="m18 14 .7 2.3L21 17l-2.3.7L18 20l-.7-2.3L15 17l2.3-.7L18 14Z" />
     </svg>
+  );
+}
+
+function CardVeiculoChat({
+  carro,
+}: CardVeiculoChatProps) {
+  const energia = identificarEnergia(carro);
+  const cores = separarLista(carro.cores).slice(0, 5);
+  const itens = separarLista(carro.itens).slice(0, 3);
+
+  return (
+    <article className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+      <div className="relative h-52 w-full overflow-hidden bg-slate-100">
+        <Image
+          src={`/${carro.imagem_arquivo}`}
+          alt={`${carro.montadora} ${carro.modelo}`}
+          fill
+          className="object-cover"
+          sizes="(max-width: 768px) 100vw, 600px"
+        />
+      </div>
+
+      <div className="p-5">
+        <div className="flex items-start justify-between gap-4">
+          <div className="min-w-0">
+            <p className="text-xs font-medium text-slate-500">
+              {carro.montadora}
+            </p>
+
+            <h3 className="mt-1 truncate text-xl font-bold text-slate-950">
+              {carro.modelo}
+            </h3>
+          </div>
+
+          <span className="shrink-0 rounded-full border border-slate-300 bg-slate-50 px-3 py-1 text-xs font-semibold text-slate-700">
+            {carro.categoria}
+          </span>
+        </div>
+
+        <div className="mt-3 flex flex-wrap items-center gap-2">
+          <p className="mr-auto text-2xl font-bold text-slate-950">
+            {formatarPreco(carro.preco_a_partir_rs)}
+          </p>
+
+          <span
+            className={`rounded-full border px-3 py-1 text-xs font-semibold ${obterClasseEnergia(
+              energia,
+            )}`}
+          >
+            {energia}
+          </span>
+        </div>
+
+        <div className="mt-5 grid gap-x-6 gap-y-4 sm:grid-cols-2">
+          <div>
+            <p className="text-xs text-slate-500">
+              Consumo / autonomia
+            </p>
+
+            <p className="mt-1 text-sm font-semibold text-slate-900">
+              {carro.consumo}
+            </p>
+          </div>
+
+          <div>
+            <p className="text-xs text-slate-500">
+              Potência
+            </p>
+
+            <p className="mt-1 text-sm font-semibold text-slate-900">
+              {carro.potencia_cv}
+            </p>
+          </div>
+
+          <div>
+            <p className="text-xs text-slate-500">
+              Câmbio
+            </p>
+
+            <p className="mt-1 text-sm font-semibold text-slate-900">
+              {carro.cambio}
+            </p>
+          </div>
+
+          <div>
+            <p className="text-xs text-slate-500">
+              Ano
+            </p>
+
+            <p className="mt-1 text-sm font-semibold text-slate-900">
+              {carro.ano}
+            </p>
+          </div>
+        </div>
+
+        {cores.length > 0 && (
+          <div className="mt-5">
+            <p className="text-xs text-slate-500">
+              Cores disponíveis
+            </p>
+
+            <div className="mt-2 flex items-center gap-2">
+              {cores.map((cor) => (
+                <span
+                  key={cor}
+                  title={cor}
+                  aria-label={cor}
+                  className={`h-5 w-5 rounded-full border ${obterClasseCor(
+                    cor,
+                  )}`}
+                />
+              ))}
+            </div>
+          </div>
+        )}
+
+        {itens.length > 0 && (
+          <div className="mt-5 space-y-2">
+            {itens.map((item) => (
+              <div
+                key={item}
+                className="flex items-start gap-2 text-sm text-slate-600"
+              >
+                <span
+                  aria-hidden="true"
+                  className="mt-0.5 text-emerald-600"
+                >
+                  ✓
+                </span>
+
+                <span>{item}</span>
+              </div>
+            ))}
+          </div>
+        )}
+
+        <div className="mt-5 grid gap-2 sm:grid-cols-2">
+          <Link
+            href={`/carros/${carro.id}`}
+            className="flex items-center justify-center rounded-full border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-800 transition hover:border-blue-500 hover:text-blue-600"
+          >
+            Ver detalhes
+          </Link>
+
+          <Link
+            href={`/comparar?ids=${carro.id}`}
+            className="flex items-center justify-center rounded-full bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-700"
+          >
+            Comparar
+          </Link>
+        </div>
+      </div>
+    </article>
+  );
+}
+
+function FontesDiscretas({
+  fontes,
+}: FontesDiscretasProps) {
+  const fontesUnicas = fontes.filter(
+    (fonte, indice, lista) =>
+      lista.findIndex(
+        (item) =>
+          item.arquivo === fonte.arquivo &&
+          item.trecho === fonte.trecho,
+      ) === indice,
+  );
+
+  return (
+    <div className="mt-4 border-t border-slate-200 pt-3">
+      <p className="mb-2 text-xs font-medium text-slate-500">
+        Fontes:
+      </p>
+
+      <div className="flex flex-wrap gap-2">
+        {fontesUnicas.map((fonte) => (
+          <span
+            key={`${fonte.id}-${fonte.trecho}`}
+            title={`${fonte.arquivo} · Trecho ${
+              fonte.trecho
+            } · Relevância ${formatarSimilaridade(
+              fonte.similaridade,
+            )}\n\n${fonte.conteudo}`}
+            className="inline-flex max-w-full cursor-help items-center gap-1.5 rounded-full border border-slate-200 bg-slate-100 px-3 py-1.5 text-xs font-medium text-slate-600"
+          >
+            <svg
+              aria-hidden="true"
+              viewBox="0 0 24 24"
+              className="h-3.5 w-3.5 shrink-0"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.8"
+            >
+              <path d="M4 4h12l4 4v12H4V4Z" />
+              <path d="M16 4v4h4" />
+              <path d="M8 13h8" />
+              <path d="M8 17h5" />
+            </svg>
+
+            <span className="max-w-52 truncate">
+              {fonte.arquivo.replace(".pdf", "")}
+            </span>
+
+            <span className="shrink-0 text-slate-400">
+              · Trecho {fonte.trecho}
+            </span>
+          </span>
+        ))}
+      </div>
+    </div>
   );
 }
 
@@ -488,6 +1016,14 @@ export default function ChatIA() {
       return;
     }
 
+    const confirmou = window.confirm(
+      "Deseja realmente apagar todo o histórico de conversas?",
+    );
+
+    if (!confirmou) {
+      return;
+    }
+
     const novaConversa = criarNovaConversa();
 
     window.localStorage.removeItem(CHAVE_HISTORICO);
@@ -504,8 +1040,10 @@ export default function ChatIA() {
   async function processarPergunta(
     perguntaAtual: string,
   ): Promise<void> {
+    const perguntaLimpa = perguntaAtual.trim();
+
     if (
-      !perguntaAtual ||
+      !perguntaLimpa ||
       enviando ||
       !conversaAtiva
     ) {
@@ -517,12 +1055,12 @@ export default function ChatIA() {
     const mensagemUsuario: Mensagem = {
       id: criarId(),
       autor: "usuario",
-      texto: perguntaAtual,
+      texto: perguntaLimpa,
     };
 
     const titulo =
       conversaAtiva.titulo === "Nova conversa"
-        ? criarTituloConversa(perguntaAtual)
+        ? criarTituloConversa(perguntaLimpa)
         : conversaAtiva.titulo;
 
     adicionarMensagem(
@@ -532,6 +1070,42 @@ export default function ChatIA() {
     );
 
     setPergunta("");
+
+    const opcoesDaMontadora =
+      encontrarOpcoesPorMontadora(
+        perguntaLimpa,
+      );
+
+    if (opcoesDaMontadora.length > 1) {
+      const nomeMontadora =
+        opcoesDaMontadora[0].montadora;
+
+      adicionarMensagem(conversaId, {
+        id: criarId(),
+        autor: "ia",
+        texto: `Por favor, escolha qual dos modelos da ${nomeMontadora} você gostaria de conhecer melhor:`,
+        opcoesVeiculos:
+          opcoesDaMontadora.map(
+            (carro) => carro.id,
+          ),
+      });
+
+      return;
+    }
+
+    if (perguntaEhAmbigua(perguntaLimpa)) {
+      adicionarMensagem(conversaId, {
+        id: criarId(),
+        autor: "ia",
+        texto:
+          "Posso ajudar você a escolher uma opção da nossa base. Para oferecer uma recomendação mais adequada, escolha uma preferência abaixo ou informe categoria, faixa de preço, tipo de energia ou uso principal do veículo.",
+        opcoesRefinamento:
+          OPCOES_REFINAMENTO,
+      });
+
+      return;
+    }
+
     setEnviando(true);
 
     try {
@@ -541,7 +1115,7 @@ export default function ChatIA() {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          pergunta: perguntaAtual,
+          pergunta: perguntaLimpa,
         }),
       });
 
@@ -559,11 +1133,18 @@ export default function ChatIA() {
         );
       }
 
+      const veiculosRelacionados =
+        encontrarVeiculosRelacionados(
+          perguntaLimpa,
+          dados.resultado.resposta,
+        );
+
       adicionarMensagem(conversaId, {
         id: criarId(),
         autor: "ia",
         texto: dados.resultado.resposta,
         fontes: dados.resultado.fontes,
+        veiculosRelacionados,
       });
     } catch (error) {
       adicionarMensagem(conversaId, {
@@ -584,7 +1165,7 @@ export default function ChatIA() {
   ): Promise<void> {
     event.preventDefault();
 
-    await processarPergunta(pergunta.trim());
+    await processarPergunta(pergunta);
   }
 
   async function usarSugestao(
@@ -631,8 +1212,6 @@ export default function ChatIA() {
                 fill="none"
                 stroke="currentColor"
                 strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
               >
                 <path d="M4 6h16" />
                 <path d="M4 12h16" />
@@ -661,8 +1240,6 @@ export default function ChatIA() {
               fill="none"
               stroke="currentColor"
               strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
             >
               <path d="M8 3H3v5" />
               <path d="m3 3 6 6" />
@@ -730,69 +1307,177 @@ export default function ChatIA() {
               aria-live="polite"
             >
               {conversaAtiva.mensagens.map(
-                (mensagem) => (
-                  <div
-                    key={mensagem.id}
-                    className={`flex ${
-                      mensagem.autor === "usuario"
-                        ? "justify-end"
-                        : "justify-start"
-                    }`}
-                  >
+                (mensagem) => {
+                  const veiculosDaMensagem =
+                    mensagem.veiculosRelacionados
+                      ?.map((carroId) =>
+                        carros.find(
+                          (carro) =>
+                            carro.id === carroId,
+                        ),
+                      )
+                      .filter(
+                        (
+                          carro,
+                        ): carro is Carro =>
+                          carro !== undefined,
+                      ) ?? [];
+
+                  return (
                     <div
-                      className={`max-w-[78%] rounded-2xl px-5 py-4 text-sm leading-7 ${
+                      key={mensagem.id}
+                      className={`flex ${
                         mensagem.autor === "usuario"
-                          ? "bg-blue-600 text-white"
-                          : "border border-slate-200 bg-white text-slate-700 shadow-sm"
+                          ? "justify-end"
+                          : "justify-start"
                       }`}
                     >
-                      <p className="whitespace-pre-wrap">
-                        {mensagem.texto}
-                      </p>
+                      <div
+                        className={`max-w-[86%] rounded-2xl px-5 py-4 text-sm leading-7 ${
+                          mensagem.autor === "usuario"
+                            ? "bg-blue-600 text-white"
+                            : "border border-slate-200 bg-white text-slate-700 shadow-sm"
+                        }`}
+                      >
+                        <p className="whitespace-pre-wrap">
+                          {mensagem.texto}
+                        </p>
 
-                      {mensagem.fontes &&
-                        mensagem.fontes.length > 0 && (
-                          <div className="mt-4 border-t border-slate-200 pt-4">
-                            <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-slate-500">
-                              Fontes consultadas
-                            </p>
+                        {mensagem.autor === "ia" &&
+                          mensagem.opcoesVeiculos &&
+                          mensagem.opcoesVeiculos.length >
+                            0 && (
+                            <div className="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-4">
+                              <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                                Só para confirmar
+                              </p>
 
-                            <div className="space-y-2">
-                              {mensagem.fontes.map(
-                                (fonte) => (
-                                  <article
-                                    key={fonte.id}
-                                    className="rounded-xl bg-slate-50 p-3 text-xs text-slate-600"
+                              <p className="mt-1 text-sm text-slate-600">
+                                Qual destes veículos você gostaria de conhecer?
+                              </p>
+
+                              <div className="mt-4 space-y-2">
+                                {mensagem.opcoesVeiculos.map(
+                                  (
+                                    carroId,
+                                    indice,
+                                  ) => {
+                                    const carro =
+                                      carros.find(
+                                        (item) =>
+                                          item.id ===
+                                          carroId,
+                                      );
+
+                                    if (!carro) {
+                                      return null;
+                                    }
+
+                                    return (
+                                      <button
+                                        key={carro.id}
+                                        type="button"
+                                        disabled={enviando}
+                                        onClick={() =>
+                                          void usarSugestao(
+                                            `Quero saber mais sobre o ${carro.montadora} ${carro.modelo}.`,
+                                          )
+                                        }
+                                        className="group flex w-full items-center gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3 text-left transition hover:border-blue-400 hover:bg-blue-50 disabled:cursor-not-allowed disabled:opacity-50"
+                                      >
+                                        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-sm font-bold text-slate-600 transition group-hover:bg-blue-100 group-hover:text-blue-700">
+                                          {indice + 1}
+                                        </span>
+
+                                        <span className="min-w-0 flex-1">
+                                          <strong className="block truncate text-sm text-slate-900">
+                                            {carro.montadora}{" "}
+                                            {carro.modelo}
+                                          </strong>
+
+                                          <span className="mt-0.5 block text-xs text-slate-500">
+                                            {formatarPreco(
+                                              carro.preco_a_partir_rs,
+                                            )}
+                                          </span>
+                                        </span>
+
+                                        <svg
+                                          aria-hidden="true"
+                                          viewBox="0 0 24 24"
+                                          className="h-4 w-4 shrink-0 text-slate-400 transition group-hover:translate-x-1 group-hover:text-blue-600"
+                                          fill="none"
+                                          stroke="currentColor"
+                                          strokeWidth="2"
+                                        >
+                                          <path d="m9 18 6-6-6-6" />
+                                        </svg>
+                                      </button>
+                                    );
+                                  },
+                                )}
+                              </div>
+                            </div>
+                          )}
+
+                        {mensagem.autor === "ia" &&
+                          mensagem.opcoesRefinamento &&
+                          mensagem.opcoesRefinamento.length >
+                            0 && (
+                            <div className="mt-4 flex flex-wrap gap-2">
+                              {mensagem.opcoesRefinamento.map(
+                                (opcao) => (
+                                  <button
+                                    key={opcao}
+                                    type="button"
+                                    disabled={enviando}
+                                    onClick={() =>
+                                      void usarSugestao(
+                                        opcao,
+                                      )
+                                    }
+                                    className="rounded-full border border-blue-200 bg-blue-50 px-4 py-2 text-xs font-semibold text-blue-700 transition hover:border-blue-400 hover:bg-blue-100 disabled:cursor-not-allowed disabled:opacity-50"
                                   >
-                                    <div className="flex flex-wrap justify-between gap-2">
-                                      <strong className="text-slate-800">
-                                        {fonte.arquivo}
-                                      </strong>
-
-                                      <span>
-                                        Relevância:{" "}
-                                        {formatarSimilaridade(
-                                          fonte.similaridade,
-                                        )}
-                                      </span>
-                                    </div>
-
-                                    <p className="mt-2 font-medium text-slate-700">
-                                      Trecho {fonte.trecho}
-                                    </p>
-
-                                    <p className="mt-2 line-clamp-3">
-                                      {fonte.conteudo}
-                                    </p>
-                                  </article>
+                                    {opcao}
+                                  </button>
                                 ),
                               )}
                             </div>
-                          </div>
-                        )}
+                          )}
+
+                        {mensagem.autor === "ia" &&
+                          veiculosDaMensagem.length >
+                            0 && (
+                            <div
+                              className={`mt-5 grid gap-4 ${
+                                veiculosDaMensagem.length >
+                                1
+                                  ? "xl:grid-cols-2"
+                                  : "grid-cols-1"
+                              }`}
+                            >
+                              {veiculosDaMensagem.map(
+                                (carro) => (
+                                  <CardVeiculoChat
+                                    key={carro.id}
+                                    carro={carro}
+                                  />
+                                ),
+                              )}
+                            </div>
+                          )}
+
+                        {mensagem.fontes &&
+                          mensagem.fontes.length >
+                            0 && (
+                            <FontesDiscretas
+                              fontes={mensagem.fontes}
+                            />
+                          )}
+                      </div>
                     </div>
-                  </div>
-                ),
+                  );
+                },
               )}
 
               {enviando && (
