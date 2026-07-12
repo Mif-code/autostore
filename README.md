@@ -1,4 +1,4 @@
-# 🚗 Vroom AutoStore
+# 🚗 Vroomly AutoStore
 
 Aplicação web desenvolvida para o desafio técnico **AutoStore**, com o objetivo de criar uma plataforma inteligente para consulta, comparação e descoberta de veículos.
 
