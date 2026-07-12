@@ -1,211 +1,405 @@
-# AutoStore
+# 🚗 Vroom AutoStore
 
-Aplicação web para consulta, comparação e recomendação de veículos, desenvolvida como projeto de desafio técnico.
+Aplicação web desenvolvida para o desafio técnico **AutoStore**, com o objetivo de criar uma plataforma inteligente para consulta, comparação e descoberta de veículos.
 
-O AutoStore oferece um catálogo com 15 veículos, filtros de pesquisa, página de detalhes, comparação entre até 3 veículos, registro e gerenciamento de interessados (leads) e um assistente de inteligência artificial baseado em RAG (Retrieval-Augmented Generation).
+O projeto permite explorar um catálogo de veículos, visualizar informações técnicas, comparar modelos, registrar interesses comerciais e conversar com o **VroomAI**, um assistente inteligente integrado à API Gemini e a uma arquitetura RAG (Retrieval-Augmented Generation).
 
-## Funcionalidades
+---
 
-- Catálogo com 15 veículos de 5 montadoras.
-- Busca por modelo, montadora, categoria, motor e combustível/energia.
-- Filtros combinados.
-- Filtro por faixa de preço.
-- Ordenação dos veículos.
-- Página individual de detalhes.
-- Comparação visual de até 3 veículos.
-- Destaque automático de menor preço e maior potência na comparação.
-- Formulário "Tenho interesse".
-- Registro e persistência local de leads.
-- Página pública para consulta e gerenciamento dos leads.
-- Pesquisa e filtros por status dos leads.
-- AutoStoreAI com interface de chat.
+## 📌 Sobre o projeto
+
+O Vroom AutoStore foi desenvolvido como solução para facilitar a escolha de veículos dentro de uma loja virtual.
+
+Além das funcionalidades tradicionais de um catálogo automotivo, o sistema utiliza Inteligência Artificial para responder perguntas utilizando informações recuperadas da base técnica fornecida no desafio.
+
+O VroomAI utiliza busca semântica para localizar os trechos mais relevantes dos documentos técnicos e fornecer essas informações como contexto para geração das respostas.
+
+Dessa forma, o assistente consegue responder perguntas sobre:
+
+- preços;
+- consumo;
+- autonomia;
+- motorização;
+- potência;
+- câmbio;
+- cores disponíveis;
+- equipamentos;
+- veículos elétricos e híbridos;
+- comparação entre modelos;
+- custo-benefício;
+- características técnicas dos veículos.
+
+Quando uma pergunta é ambígua, o VroomAI ajuda o usuário a escolher o veículo desejado antes de continuar a consulta.
+
+---
+
+## ✨ Funcionalidades
+
+### 🚘 Catálogo de veículos
+
+- Exibição de 15 veículos.
+- Busca por modelo, montadora e motor.
+- Filtros por características dos veículos.
+- Ordenação por relevância e preço.
+- Exibição da quantidade de resultados encontrados.
+- Cards responsivos com informações principais.
+- Navegação para detalhes dos veículos.
+- Seleção de veículos para comparação.
+- Formulário de interesse comercial.
+
+### 🔎 Detalhes do veículo
+
+- Imagem do veículo.
+- Montadora.
+- Modelo.
+- Ano.
+- Categoria.
+- Motor.
+- Potência.
+- Câmbio.
+- Consumo ou autonomia.
+- Combustível ou tipo de energia.
+- Cores disponíveis.
+- Itens de série.
+- Preço de referência.
+- Veículos comparáveis.
+- Acesso ao VroomAI.
+- Adição do veículo à comparação.
+- Registro de interesse comercial.
+
+### ⚖️ Comparação de veículos
+
+- Comparação de até 3 veículos simultaneamente.
+- Adição de veículos pelo catálogo.
+- Sugestões de veículos quando nenhuma opção está selecionada.
+- Animação personalizada na tela vazia.
+- Remoção individual de veículos.
+- Comparação de:
+  - preço;
+  - categoria;
+  - ano;
+  - motor;
+  - potência;
+  - câmbio;
+  - combustível ou energia;
+  - consumo ou autonomia;
+  - cores;
+  - equipamentos;
+  - perfil do comprador.
+- Destaques automáticos para características relevantes, como menor preço e maior potência.
+- Acesso aos detalhes e ao VroomAI diretamente pela comparação.
+
+### 🤖 VroomAI
+
+Assistente inteligente para consulta dos veículos disponíveis no catálogo.
+
+Principais recursos:
+
+- Integração com a API Gemini.
+- Geração de embeddings.
+- Busca semântica.
+- Arquitetura RAG.
+- Recuperação de informações da base técnica.
+- Respostas contextualizadas.
+- Exibição dos veículos relacionados às perguntas.
+- Cards de veículos nas respostas.
+- Exibição discreta das fontes consultadas.
+- Indicação de relevância dos trechos recuperados.
+- Tratamento de perguntas ambíguas.
+- Sugestão de modelos para o usuário escolher.
+- Histórico de conversas salvo no navegador.
+- Criação de novas conversas.
+- Seleção de conversas anteriores.
+- Limpeza do histórico.
 - Sugestões de perguntas.
-- Histórico de conversas armazenado no navegador.
-- Criação e exclusão de conversas.
-- Busca semântica baseada no conteúdo do PDF técnico.
-- Recuperação dos trechos mais relevantes para geração das respostas.
-- Exibição das fontes utilizadas pelo RAG.
-- Tratamento para ausência da chave da API.
+- Chat flutuante disponível durante a navegação.
 
-## Tecnologias
+### 📚 RAG e busca semântica
+
+O sistema utiliza uma arquitetura **Retrieval-Augmented Generation (RAG)**.
+
+O fluxo implementado é:
+
+1. Leitura da base técnica fornecida no desafio.
+2. Divisão do conteúdo em chunks.
+3. Geração dos embeddings utilizando a API Gemini.
+4. Criação e armazenamento do índice vetorial.
+5. Geração do embedding da pergunta enviada pelo usuário.
+6. Comparação semântica entre a pergunta e os chunks indexados.
+7. Recuperação dos trechos mais relevantes.
+8. Envio do contexto recuperado para o modelo de IA.
+9. Geração da resposta.
+10. Exibição das fontes consultadas para o usuário.
+
+Durante os testes, a base técnica utilizada pelo projeto gerou **23 chunks**, com embeddings de **3072 dimensões**.
+
+### 👥 Gestão de leads
+
+- Registro de interesse em veículos.
+- Nome do interessado.
+- E-mail.
+- Telefone.
+- Veículo selecionado.
+- Mensagem.
+- Data de criação.
+- Busca de leads.
+- Filtros por status.
+- Alteração de status.
+- Exclusão de leads.
+- Atualização da listagem.
+- Painel interno para acompanhamento dos contatos.
+
+### 🌙 Tema claro e escuro
+
+- Alternância entre tema claro e escuro.
+- Aplicação do tema nas páginas do sistema.
+- Persistência da preferência do usuário no navegador.
+
+### 📱 Responsividade
+
+Interface adaptada para diferentes tamanhos de tela, incluindo desktop, tablet e dispositivos móveis.
+
+---
+
+## 🛠️ Tecnologias utilizadas
+
+### Front-end
 
 - Next.js 16
 - React 19
 - TypeScript
 - Tailwind CSS 4
-- ESLint
-- Gemini API
+- Next.js App Router
+- Next/Image
+- LocalStorage
+
+### Back-end
+
+- Next.js Route Handlers
+- Node.js Runtime
+- API REST
+- Persistência local em JSON
+
+### Inteligência Artificial
+
+- Google Gemini API
 - Embeddings
 - Busca semântica
-- Similaridade por cosseno
-- RAG (Retrieval-Augmented Generation)
-- Local Storage
-- Git e GitHub
+- Similaridade vetorial
+- Retrieval-Augmented Generation (RAG)
 
-## Estrutura principal
+### Ferramentas
+
+- Git
+- GitHub
+- GitHub Desktop
+- Visual Studio Code
+- ESLint
+
+---
+
+## 📁 Estrutura principal do projeto
 
 ```text
 autostore/
 ├── data/
-│   ├── leads.json
+│   ├── leads/
 │   └── rag/
-│       └── indice-vetorial.json
 ├── public/
-│   └── assets/
-│       └── RAG-AutoStore_Base_Tecnica.pdf
+│   ├── images/
+│   ├── carrinho-comparacao.png
+│   ├── vroom-ai-icon.png
+│   └── vroomly-logo.png
 ├── src/
 │   ├── app/
 │   │   ├── api/
-│   │   │   ├── chat/
-│   │   │   ├── leads/
-│   │   │   └── rag/
-│   │   ├── carros/[id]/
-│   │   ├── chat/new/
+│   │   ├── carros/
+│   │   ├── chat/
 │   │   ├── comparar/
 │   │   ├── leads/
 │   │   └── page.tsx
 │   ├── components/
 │   ├── data/
-│   │   └── carros_catalogo.json
 │   ├── lib/
 │   └── types/
 ├── .env.example
 ├── .gitignore
+├── next.config.ts
 ├── package.json
+├── package-lock.json
+├── tsconfig.json
 └── README.md
 ```
 
-## Arquitetura do RAG
+---
 
-O AutoStoreAI utiliza uma arquitetura RAG para responder perguntas com base nos documentos técnicos fornecidos no projeto.
+## ⚙️ Como executar o projeto
 
-O fluxo implementado é:
-
-```text
-PDF técnico
-    ↓
-Extração do conteúdo
-    ↓
-Divisão do conteúdo em chunks
-    ↓
-Geração de embeddings
-    ↓
-Índice vetorial local
-    ↓
-Pergunta do usuário
-    ↓
-Embedding da pergunta
-    ↓
-Busca por similaridade de cosseno
-    ↓
-Recuperação dos chunks mais relevantes
-    ↓
-Envio do contexto recuperado para o Gemini
-    ↓
-Geração da resposta
-    ↓
-Exibição da resposta e das fontes
-```
-
-O modelo recebe instruções para responder somente sobre os veículos presentes na base do projeto e utilizar o contexto recuperado dos documentos técnicos.
-
-## Fonte dos dados
-
-Os dados dos veículos e o conteúdo utilizado pelo RAG são provenientes exclusivamente dos arquivos fornecidos para o desafio técnico:
-
-- Catálogo estruturado de veículos em JSON.
-- PDF com fichas técnicas e informações dos veículos.
-
-Não são utilizadas fontes externas para atualizar preços ou especificações.
-
-## Pré-requisitos
-
-Antes de executar o projeto, instale:
-
-- Node.js
-- npm
-- Git
-
-## Instalação
-
-Clone o repositório:
+### 1. Clonar o repositório
 
 ```bash
 git clone URL_DO_REPOSITORIO
 ```
 
-Entre na pasta do projeto:
+### 2. Entrar na pasta do projeto
 
 ```bash
 cd autostore
 ```
 
-Instale as dependências:
+### 3. Instalar as dependências
 
 ```bash
 npm install
 ```
 
-## Configuração da API
+### 4. Configurar a variável de ambiente
 
-Crie o arquivo `.env.local` na raiz do projeto.
+Crie um arquivo `.env.local` na raiz do projeto.
 
-Utilize o `.env.example` como referência:
-
-```env
-GEMINI_API_KEY=
-```
-
-Adicione sua chave:
+Adicione:
 
 ```env
-GEMINI_API_KEY=sua_chave_aqui
+GEMINI_API_KEY=SUA_CHAVE_GEMINI
 ```
 
-Nunca envie o arquivo `.env.local` ou a chave da API para o GitHub.
+> A chave da API não deve ser enviada para o GitHub.
 
-## Executando o projeto
+O arquivo `.env.local` deve permanecer configurado no `.gitignore`.
 
-Inicie o servidor de desenvolvimento:
+### 5. Iniciar o servidor de desenvolvimento
 
 ```bash
 npm run dev
 ```
 
-Acesse a aplicação pelo endereço exibido no terminal.
-
-Por padrão:
+Acesse a aplicação pelo navegador utilizando o endereço exibido pelo Next.js no terminal. Por padrão, em ambiente local, o endereço utilizado é:
 
 ```text
 http://localhost:3000
 ```
 
-## Preparação do índice vetorial
+---
 
-Com o servidor iniciado e a `GEMINI_API_KEY` configurada, gere o índice vetorial através do endpoint:
+## 🧠 Como criar o índice vetorial
+
+Antes de utilizar o VroomAI pela primeira vez, é necessário criar o índice vetorial da base técnica.
+
+Com o servidor em execução, utilize uma requisição POST para:
 
 ```text
-POST /api/rag/indexar
+/api/rag/indexar
 ```
 
-O índice gerado é armazenado localmente e não deve ser enviado ao GitHub.
+No Windows CMD:
 
-## Endpoints principais
+```cmd
+curl.exe -X POST http://localhost:3000/api/rag/indexar
+```
 
-| Método | Endpoint | Descrição |
-| --- | --- | --- |
-| GET | `/api/rag/teste` | Testa a leitura e divisão do PDF técnico |
-| GET | `/api/rag/indexar` | Consulta o estado do índice vetorial |
-| POST | `/api/rag/indexar` | Gera o índice vetorial |
-| GET | `/api/rag/busca` | Consulta a disponibilidade da busca semântica |
-| POST | `/api/rag/busca` | Executa uma busca semântica |
-| POST | `/api/chat` | Processa perguntas do AutoStoreAI utilizando RAG |
-| GET | `/api/leads` | Lista os leads cadastrados |
-| POST | `/api/leads` | Registra um novo lead |
+Quando a indexação for concluída corretamente, a API retornará informações sobre:
 
-## Validação do projeto
+- criação do índice vetorial;
+- quantidade de chunks;
+- dimensões dos embeddings;
+- documento utilizado como fonte.
 
-Antes de finalizar uma alteração, execute:
+O índice criado será utilizado posteriormente pela busca semântica.
+
+---
+
+## 🔍 Verificar o índice vetorial
+
+Para verificar se o índice está disponível:
+
+```text
+GET /api/rag/indexar
+```
+
+Com o projeto executando localmente, acesse:
+
+```text
+http://localhost:3000/api/rag/indexar
+```
+
+A API informará:
+
+- se a chave Gemini está configurada;
+- se o índice existe;
+- quantidade de chunks disponíveis;
+- dimensões dos embeddings.
+
+---
+
+## 🔎 Verificar a busca semântica
+
+Para verificar se a busca semântica está disponível:
+
+```text
+GET /api/rag/buscar
+```
+
+Exemplo no Windows CMD:
+
+```cmd
+curl.exe --get --data-urlencode "pergunta=Qual carro elétrico tem maior autonomia?" http://localhost:3000/api/rag/buscar
+```
+
+---
+
+## 💬 Exemplos de perguntas para o VroomAI
+
+```text
+Qual carro elétrico tem maior autonomia?
+```
+
+```text
+Quero saber mais sobre o BYD Seal.
+```
+
+```text
+Compare o BYD Dolphin e o BYD Seal.
+```
+
+```text
+Quais SUVs estão disponíveis?
+```
+
+```text
+Qual veículo tem melhor custo-benefício?
+```
+
+```text
+Quero saber mais sobre um modelo da BYD.
+```
+
+No último exemplo, existe ambiguidade porque há mais de um veículo da BYD no catálogo. Nesse caso, o VroomAI apresenta os modelos disponíveis para o usuário escolher antes de continuar a consulta.
+
+---
+
+## 🔐 Segurança
+
+A chave da API Gemini é armazenada apenas no arquivo local:
+
+```text
+.env.local
+```
+
+Esse arquivo não deve ser versionado.
+
+Antes de realizar commits, é recomendado verificar:
+
+```bash
+git status
+```
+
+Também é importante nunca incluir chaves, tokens ou outras credenciais diretamente no código-fonte.
+
+---
+
+## 🧪 Validação do projeto
+
+Para verificar a qualidade do código:
 
 ```bash
 npm run lint
@@ -217,26 +411,76 @@ Para validar a compilação de produção:
 npm run build
 ```
 
-O projeto deve concluir os dois comandos sem erros antes da entrega.
+Antes da apresentação, recomenda-se executar o sistema e testar:
 
-## Status atual
+- catálogo;
+- busca;
+- filtros;
+- ordenação;
+- detalhes dos veículos;
+- comparação;
+- formulário de interesse;
+- criação, alteração e exclusão de leads;
+- histórico do VroomAI;
+- limpeza das conversas;
+- chat flutuante;
+- tema claro e escuro;
+- criação e disponibilidade do índice vetorial;
+- busca semântica;
+- respostas do VroomAI;
+- fontes consultadas;
+- tratamento de perguntas ambíguas.
 
-As funcionalidades principais da aplicação estão implementadas.
+---
 
-O processamento do PDF técnico, divisão em chunks, geração de embeddings, índice vetorial, busca semântica, integração do chat com RAG e exibição de fontes estão implementados no código.
+## 🎯 Objetivo técnico
 
-A validação completa do fluxo com a Gemini API depende da configuração de uma `GEMINI_API_KEY` válida.
+O principal objetivo técnico do projeto foi desenvolver uma aplicação completa utilizando Next.js e integrar Inteligência Artificial com uma arquitetura RAG.
 
-Após configurar a chave, devem ser executados:
+A implementação busca demonstrar conhecimentos em:
 
-1. Geração do índice vetorial.
-2. Teste da busca semântica.
-3. Teste completo do AutoStoreAI.
-4. Validação das respostas e fontes recuperadas.
-5. Testes finais de integração.
+- desenvolvimento front-end;
+- desenvolvimento back-end;
+- criação de APIs;
+- TypeScript;
+- React;
+- Next.js;
+- manipulação e persistência de dados;
+- integração com APIs externas;
+- embeddings;
+- busca semântica;
+- recuperação de contexto;
+- engenharia de prompt;
+- experiência do usuário;
+- Git e GitHub.
 
-## Autor
+---
 
-Moisés Ferreira
+## 🚧 Decisões de implementação
 
-Projeto desenvolvido para fins de avaliação técnica.
+O projeto foi desenvolvido para execução local durante a avaliação técnica.
+
+Por esse motivo:
+
+- os leads são armazenados localmente em arquivo JSON;
+- o índice vetorial é criado e armazenado localmente;
+- o histórico das conversas é salvo no navegador;
+- a chave Gemini é configurada exclusivamente por variável de ambiente.
+
+Em um ambiente de produção, a evolução natural da arquitetura seria utilizar um banco de dados persistente para os leads e uma solução de armazenamento vetorial persistente para os embeddings.
+
+---
+
+## 👨‍💻 Autor
+
+**Moisés Ferreira**
+
+Projeto desenvolvido para o desafio técnico AutoStore.
+
+GitHub: `Mif-code`
+
+---
+
+## 📄 Licença
+
+Projeto desenvolvido para fins educacionais e de avaliação técnica.
