@@ -1,7 +1,11 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import {
+  Geist,
+  Geist_Mono,
+} from "next/font/google";
 
 import FloatingChat from "@/components/FloatingChat";
+import ThemeProvider from "@/components/ThemeProvider";
 
 import "./globals.css";
 
@@ -21,6 +25,36 @@ export const metadata: Metadata = {
     "Catálogo inteligente de veículos com comparação, leads e assistente VroomAI.",
 };
 
+const SCRIPT_TEMA = `
+(function () {
+  try {
+    var chave = "vroom-autostore-tema";
+    var temaSalvo = localStorage.getItem(chave);
+    var prefereEscuro = window.matchMedia(
+      "(prefers-color-scheme: dark)"
+    ).matches;
+
+    var tema =
+      temaSalvo === "dark" ||
+      temaSalvo === "light"
+        ? temaSalvo
+        : prefereEscuro
+          ? "dark"
+          : "light";
+
+    document.documentElement.classList.toggle(
+      "dark",
+      tema === "dark"
+    );
+
+    document.documentElement.style.colorScheme = tema;
+  } catch (error) {
+    document.documentElement.classList.remove("dark");
+    document.documentElement.style.colorScheme = "light";
+  }
+})();
+`;
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -29,12 +63,23 @@ export default function RootLayout({
   return (
     <html
       lang="pt-BR"
+      suppressHydrationWarning
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col">
-        {children}
+      <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: SCRIPT_TEMA,
+          }}
+        />
+      </head>
 
-        <FloatingChat />
+      <body className="flex min-h-full flex-col">
+        <ThemeProvider>
+          {children}
+
+          <FloatingChat />
+        </ThemeProvider>
       </body>
     </html>
   );
