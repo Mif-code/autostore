@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import {
   useCallback,
   useEffect,
@@ -41,6 +42,16 @@ interface ConfiguracaoStatus {
 interface FiltroStatusConfig {
   readonly valor: FiltroStatus;
   readonly nome: string;
+}
+
+interface PainelDetalhesLeadProps {
+  readonly lead: Lead;
+  readonly status: StatusLead;
+  readonly onFechar: () => void;
+  readonly onAlterarStatus: (
+    leadId: string,
+    novoStatus: StatusLead,
+  ) => void;
 }
 
 const ESTADO_INICIAL: EstadoLeads = {
@@ -209,6 +220,361 @@ function limparTelefone(telefone: string): string {
   return telefone.replaceAll(/\D/g, "");
 }
 
+function obterIniciais(nome: string): string {
+  const partes = nome
+    .trim()
+    .split(/\s+/)
+    .filter((parte) => parte.length > 0);
+
+  if (partes.length === 0) {
+    return "LD";
+  }
+
+  if (partes.length === 1) {
+    return partes[0].slice(0, 2).toUpperCase();
+  }
+
+  const primeiraInicial = partes[0]?.[0] ?? "";
+  const ultimaInicial = partes.at(-1)?.[0] ?? "";
+
+  return `${primeiraInicial}${ultimaInicial}`.toUpperCase();
+}
+
+function PainelDetalhesLead({
+  lead,
+  status,
+  onFechar,
+  onAlterarStatus,
+}: PainelDetalhesLeadProps) {
+  const configuracaoStatus =
+    CONFIGURACOES_STATUS[status];
+
+  const telefoneLimpo =
+    limparTelefone(lead.telefone);
+
+  useEffect(() => {
+    function fecharComEscape(
+      event: globalThis.KeyboardEvent,
+    ): void {
+      if (event.key === "Escape") {
+        onFechar();
+      }
+    }
+
+    const overflowAnterior =
+      document.body.style.overflow;
+
+    document.body.style.overflow = "hidden";
+
+    window.addEventListener(
+      "keydown",
+      fecharComEscape,
+    );
+
+    return () => {
+      document.body.style.overflow =
+        overflowAnterior;
+
+      window.removeEventListener(
+        "keydown",
+        fecharComEscape,
+      );
+    };
+  }, [onFechar]);
+
+  return (
+    <dialog
+      open
+      aria-labelledby="titulo-detalhes-lead"
+      className="fixed inset-0 z-100 m-0 flex h-screen w-screen max-w-none justify-end overflow-hidden bg-transparent p-0"
+    >
+      <button
+        type="button"
+        aria-label="Fechar informações do lead"
+        onClick={onFechar}
+        className="absolute inset-0 cursor-default bg-slate-950/55 backdrop-blur-[1px]"
+      />
+
+      <aside className="relative z-10 flex h-full w-full max-w-md flex-col overflow-hidden border-l border-slate-200 bg-white shadow-2xl">
+        <header className="flex items-start justify-between gap-4 border-b border-slate-200 px-6 py-5">
+          <div className="flex min-w-0 items-center gap-3">
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-slate-800 text-sm font-bold text-white">
+              {obterIniciais(lead.nome)}
+            </div>
+
+            <div className="min-w-0">
+              <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
+                Lead
+              </p>
+
+              <h2
+                id="titulo-detalhes-lead"
+                className="truncate text-lg font-bold text-slate-900"
+              >
+                {lead.nome}
+              </h2>
+
+              <div
+                className={`mt-2 inline-flex items-center gap-2 rounded-full border px-2.5 py-1 text-xs font-semibold ${configuracaoStatus.classeBadge}`}
+              >
+                <span
+                  aria-hidden="true"
+                  className={`h-1.5 w-1.5 rounded-full ${configuracaoStatus.classePonto}`}
+                />
+
+                {configuracaoStatus.nome}
+              </div>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            onClick={onFechar}
+            aria-label="Fechar painel"
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-slate-500 transition hover:bg-slate-100 hover:text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-600"
+          >
+            <svg
+              aria-hidden="true"
+              viewBox="0 0 24 24"
+              className="h-5 w-5"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+            >
+              <path d="M6 6l12 12" />
+              <path d="M18 6 6 18" />
+            </svg>
+          </button>
+        </header>
+
+        <div className="flex-1 overflow-y-auto px-6 py-6">
+          <section className="space-y-5">
+            <div>
+              <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
+                <svg
+                  aria-hidden="true"
+                  viewBox="0 0 24 24"
+                  className="h-4 w-4"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.8"
+                >
+                  <rect
+                    x="3"
+                    y="5"
+                    width="18"
+                    height="14"
+                    rx="2"
+                  />
+                  <path d="m3 7 9 6 9-6" />
+                </svg>
+
+                E-mail
+              </div>
+
+              {lead.email ? (
+                <a
+                  href={`mailto:${lead.email}`}
+                  className="mt-2 block break-all text-sm font-medium text-slate-800 transition hover:text-blue-600"
+                >
+                  {lead.email}
+                </a>
+              ) : (
+                <p className="mt-2 text-sm text-slate-500">
+                  E-mail não informado.
+                </p>
+              )}
+            </div>
+
+            <div>
+              <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
+                <svg
+                  aria-hidden="true"
+                  viewBox="0 0 24 24"
+                  className="h-4 w-4"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.8"
+                >
+                  <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6A19.79 19.79 0 0 1 2.12 4.18 2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.69 2.8a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.28-1.28a2 2 0 0 1 2.11-.45c.9.33 1.84.56 2.8.69A2 2 0 0 1 22 16.92Z" />
+                </svg>
+
+                Telefone
+              </div>
+
+              {lead.telefone ? (
+                <a
+                  href={`tel:${telefoneLimpo}`}
+                  className="mt-2 block text-sm font-medium text-slate-800 transition hover:text-blue-600"
+                >
+                  {lead.telefone}
+                </a>
+              ) : (
+                <p className="mt-2 text-sm text-slate-500">
+                  Telefone não informado.
+                </p>
+              )}
+            </div>
+          </section>
+
+          <div className="my-6 border-t border-slate-200" />
+
+          <section>
+            <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
+              <svg
+                aria-hidden="true"
+                viewBox="0 0 24 24"
+                className="h-4 w-4"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.8"
+              >
+                <path d="M3 11h18" />
+                <path d="m5 11 2-5h10l2 5" />
+                <path d="M5 11v7" />
+                <path d="M19 11v7" />
+                <path d="M7 18h10" />
+                <circle cx="7" cy="14" r="1" />
+                <circle cx="17" cy="14" r="1" />
+              </svg>
+
+              Veículo de interesse
+            </div>
+
+            <div className="mt-3 flex items-center justify-between gap-4">
+              <p className="text-base font-bold text-slate-900">
+                {lead.veiculoNome}
+              </p>
+
+              <Link
+                href={`/carros/${lead.veiculoId}`}
+                className="shrink-0 text-xs font-semibold text-blue-600 transition hover:text-blue-700"
+              >
+                Ver veículo
+              </Link>
+            </div>
+          </section>
+
+          <div className="my-6 border-t border-slate-200" />
+
+          <section>
+            <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
+              <svg
+                aria-hidden="true"
+                viewBox="0 0 24 24"
+                className="h-4 w-4"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.8"
+              >
+                <path d="M21 15a4 4 0 0 1-4 4H8l-5 3V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4v8Z" />
+              </svg>
+
+              Mensagem
+            </div>
+
+            <div className="mt-3 rounded-xl border border-slate-200 bg-slate-50 p-4">
+              <p className="whitespace-pre-wrap text-sm leading-6 text-slate-700">
+                {lead.mensagem?.trim() ||
+                  "O interessado não deixou uma mensagem."}
+              </p>
+            </div>
+          </section>
+
+          <div className="my-6 border-t border-slate-200" />
+
+          <section>
+            <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
+              <svg
+                aria-hidden="true"
+                viewBox="0 0 24 24"
+                className="h-4 w-4"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.8"
+              >
+                <circle cx="12" cy="12" r="9" />
+                <path d="M12 7v5l3 2" />
+              </svg>
+
+              Recebido
+            </div>
+
+            <p className="mt-2 text-sm font-medium text-slate-800">
+              {calcularTempoRecebido(
+                lead.criadoEm,
+              )}
+            </p>
+
+            <p className="mt-1 text-xs text-slate-500">
+              {formatarData(lead.criadoEm)}
+            </p>
+          </section>
+
+          <div className="my-6 border-t border-slate-200" />
+
+          <section>
+            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+              Status do lead
+            </p>
+
+            <div className="mt-3 grid grid-cols-2 gap-2">
+              {(
+                Object.keys(
+                  CONFIGURACOES_STATUS,
+                ) as StatusLead[]
+              ).map((statusDisponivel) => {
+                const configuracao =
+                  CONFIGURACOES_STATUS[
+                    statusDisponivel
+                  ];
+
+                const ativo =
+                  status === statusDisponivel;
+
+                return (
+                  <button
+                    key={statusDisponivel}
+                    type="button"
+                    onClick={() =>
+                      onAlterarStatus(
+                        lead.id,
+                        statusDisponivel,
+                      )
+                    }
+                    className={`flex items-center gap-2 rounded-xl border px-4 py-3 text-left text-xs font-semibold transition focus:outline-none focus:ring-2 focus:ring-blue-600 ${
+                      ativo
+                        ? configuracao.classeBadge
+                        : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
+                    }`}
+                  >
+                    <span
+                      aria-hidden="true"
+                      className={`h-1.5 w-1.5 rounded-full ${configuracao.classePonto}`}
+                    />
+
+                    {configuracao.nome}
+                  </button>
+                );
+              })}
+            </div>
+          </section>
+        </div>
+
+        <footer className="border-t border-slate-200 p-5">
+          <button
+            type="button"
+            onClick={onFechar}
+            className="w-full rounded-full border border-slate-300 bg-white px-5 py-3 text-sm font-semibold text-slate-800 transition hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:ring-offset-2"
+          >
+            Fechar
+          </button>
+        </footer>
+      </aside>
+    </dialog>
+  );
+}
+
 export default function LeadsPage() {
   const [estado, setEstado] =
     useState<EstadoLeads>(ESTADO_INICIAL);
@@ -222,6 +588,9 @@ export default function LeadsPage() {
     useState<Record<string, StatusLead>>({});
 
   const [leadExcluindoId, setLeadExcluindoId] =
+    useState<string | null>(null);
+
+  const [leadSelecionadoId, setLeadSelecionadoId] =
     useState<string | null>(null);
 
   const { leads, carregando, mensagemErro } = estado;
@@ -294,6 +663,14 @@ export default function LeadsPage() {
     [leads],
   );
 
+  const leadSelecionado = useMemo(
+    () =>
+      leads.find(
+        (lead) => lead.id === leadSelecionadoId,
+      ) ?? null,
+    [leads, leadSelecionadoId],
+  );
+
   const contagemPorStatus = useMemo(() => {
     const contagens: Record<StatusLead, number> = {
       novo: 0,
@@ -358,6 +735,14 @@ export default function LeadsPage() {
     }));
   }
 
+  function abrirDetalhesLead(leadId: string): void {
+    setLeadSelecionadoId(leadId);
+  }
+
+  function fecharDetalhesLead(): void {
+    setLeadSelecionadoId(null);
+  }
+
   function obterQuantidadeFiltro(
     filtro: FiltroStatus,
   ): number {
@@ -415,6 +800,10 @@ export default function LeadsPage() {
 
         return statusAtualizado;
       });
+
+      if (leadSelecionadoId === lead.id) {
+        fecharDetalhesLead();
+      }
     } catch (error) {
       const mensagem =
         error instanceof Error
@@ -532,9 +921,6 @@ export default function LeadsPage() {
                 const configuracaoStatus =
                   CONFIGURACOES_STATUS[status];
 
-                const telefoneLimpo =
-                  limparTelefone(lead.telefone);
-
                 const estaExcluindo =
                   leadExcluindoId === lead.id;
 
@@ -544,48 +930,69 @@ export default function LeadsPage() {
                     className="border-b border-slate-100 transition last:border-b-0 hover:bg-slate-50"
                   >
                     <td className="px-5 py-4 align-middle">
-                      <p className="font-semibold text-slate-900">
-                        {lead.nome}
-                      </p>
-
-                      {lead.email && (
-                        <a
-                          href={`mailto:${lead.email}`}
-                          className="mt-1 block max-w-56 truncate text-xs text-slate-500 transition hover:text-blue-600"
-                        >
-                          {lead.email}
-                        </a>
-                      )}
-
-                      {lead.telefone && (
-                        <a
-                          href={`tel:${telefoneLimpo}`}
-                          className="mt-1 block text-xs text-slate-400 transition hover:text-blue-600"
-                        >
-                          {lead.telefone}
-                        </a>
-                      )}
-                    </td>
-
-                    <td className="px-5 py-4 align-middle">
-                      <p className="max-w-48 truncate text-sm font-medium text-slate-700">
-                        {lead.veiculoNome}
-                      </p>
-                    </td>
-
-                    <td className="px-5 py-4 align-middle">
-                      <p
-                        title={
-                          lead.mensagem ||
-                          "Sem mensagem."
+                      <button
+                        type="button"
+                        onClick={() =>
+                          abrirDetalhesLead(lead.id)
                         }
-                        className="max-w-80 truncate text-sm text-slate-500"
+                        aria-label={`Abrir informações de ${lead.nome}`}
+                        className="block w-full text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-600"
                       >
-                        {resumirTexto(
-                          lead.mensagem ?? "",
-                          52,
+                        <p className="font-semibold text-slate-900">
+                          {lead.nome}
+                        </p>
+
+                        {lead.email && (
+                          <span className="mt-1 block max-w-56 truncate text-xs text-slate-500">
+                            {lead.email}
+                          </span>
                         )}
-                      </p>
+
+                        {lead.telefone && (
+                          <span className="mt-1 block text-xs text-slate-400">
+                            {lead.telefone}
+                          </span>
+                        )}
+                      </button>
+                    </td>
+
+                    <td className="px-5 py-4 align-middle">
+                      <button
+                        type="button"
+                        onClick={() =>
+                          abrirDetalhesLead(lead.id)
+                        }
+                        aria-label={`Abrir informações do veículo de ${lead.nome}`}
+                        className="block w-full text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-600"
+                      >
+                        <p className="max-w-48 truncate text-sm font-medium text-slate-700">
+                          {lead.veiculoNome}
+                        </p>
+                      </button>
+                    </td>
+
+                    <td className="px-5 py-4 align-middle">
+                      <button
+                        type="button"
+                        onClick={() =>
+                          abrirDetalhesLead(lead.id)
+                        }
+                        aria-label={`Abrir mensagem de ${lead.nome}`}
+                        className="block w-full text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-600"
+                      >
+                        <p
+                          title={
+                            lead.mensagem ||
+                            "Sem mensagem."
+                          }
+                          className="max-w-80 truncate text-sm text-slate-500"
+                        >
+                          {resumirTexto(
+                            lead.mensagem ?? "",
+                            52,
+                          )}
+                        </p>
+                      </button>
                     </td>
 
                     <td className="px-5 py-4 align-middle">
@@ -826,6 +1233,18 @@ export default function LeadsPage() {
 
         {renderizarConteudo()}
       </div>
+
+      {leadSelecionado && (
+        <PainelDetalhesLead
+          lead={leadSelecionado}
+          status={
+            statusPorLead[leadSelecionado.id] ??
+            "novo"
+          }
+          onFechar={fecharDetalhesLead}
+          onAlterarStatus={alterarStatus}
+        />
+      )}
     </main>
   );
 }

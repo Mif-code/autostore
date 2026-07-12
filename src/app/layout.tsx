@@ -20,7 +20,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Vroom AutoStore",
+  title: "Vroomly AutoStore",
   description:
     "Catálogo inteligente de veículos com comparação, leads e assistente VroomAI.",
 };

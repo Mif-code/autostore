@@ -16,11 +16,21 @@ import type { Carro } from "@/types/Carro";
 
 type TipoOrdenacao =
   | "relevancia"
+  | "ano-mais-recente"
   | "menor-preco"
+  | "mais-economico"
   | "maior-preco";
 
 const carros = carrosData as Carro[];
 const LIMITE_COMPARACAO = 3;
+
+const larguraOrdenacao: Record<TipoOrdenacao, string> = {
+  relevancia: "11rem",
+  "ano-mais-recente": "13.5rem",
+  "menor-preco": "11.5rem",
+  "mais-economico": "12.8rem",
+  "maior-preco": "11.5rem",
+};
 
 function normalizarTexto(texto: string): string {
   return texto
@@ -41,6 +51,85 @@ function obterTextoQuantidade(quantidade: number): string {
   }
 
   return `${quantidade} veículos encontrados`;
+}
+
+function obterPontuacaoRelevancia(
+  carro: Carro,
+  textoBusca: string,
+): number {
+  if (!textoBusca) {
+    return 0;
+  }
+
+  const montadora = normalizarTexto(carro.montadora);
+  const modelo = normalizarTexto(carro.modelo);
+  const categoria = normalizarTexto(carro.categoria);
+  const motor = normalizarTexto(carro.motor);
+  const cambio = normalizarTexto(carro.cambio);
+  const potencia = normalizarTexto(carro.potencia_cv);
+
+  let pontuacao = 0;
+
+  if (modelo === textoBusca) {
+    pontuacao += 100;
+  } else if (modelo.startsWith(textoBusca)) {
+    pontuacao += 80;
+  } else if (modelo.includes(textoBusca)) {
+    pontuacao += 60;
+  }
+
+  if (montadora === textoBusca) {
+    pontuacao += 50;
+  } else if (montadora.startsWith(textoBusca)) {
+    pontuacao += 40;
+  } else if (montadora.includes(textoBusca)) {
+    pontuacao += 30;
+  }
+
+  if (categoria.includes(textoBusca)) {
+    pontuacao += 20;
+  }
+
+  if (motor.includes(textoBusca)) {
+    pontuacao += 15;
+  }
+
+  if (cambio.includes(textoBusca)) {
+    pontuacao += 10;
+  }
+
+  if (potencia.includes(textoBusca)) {
+    pontuacao += 5;
+  }
+
+  return pontuacao;
+}
+
+function obterPontuacaoEconomia(carro: Carro): number {
+  const textoCompleto = normalizarTexto(
+    `${carro.categoria} ${carro.motor} ${carro.consumo}`,
+  );
+
+  const valoresNumericos =
+    carro.consumo
+      .replaceAll(",", ".")
+      .match(/\d+(?:\.\d+)?/g)
+      ?.map(Number) ?? [];
+
+  const maiorValor =
+    valoresNumericos.length > 0
+      ? Math.max(...valoresNumericos)
+      : 0;
+
+  if (textoCompleto.includes("eletrico")) {
+    return 3000 + maiorValor;
+  }
+
+  if (textoCompleto.includes("hibrido")) {
+    return 2000 + maiorValor;
+  }
+
+  return 1000 + maiorValor;
 }
 
 export default function Home() {
@@ -110,11 +199,29 @@ export default function Home() {
       );
     });
 
+    if (ordenacao === "ano-mais-recente") {
+      return [...carrosFiltrados].sort(
+        (carroA, carroB) =>
+          carroB.ano - carroA.ano ||
+          carroA.id - carroB.id,
+      );
+    }
+
     if (ordenacao === "menor-preco") {
       return [...carrosFiltrados].sort(
         (carroA, carroB) =>
           carroA.preco_a_partir_rs -
           carroB.preco_a_partir_rs,
+      );
+    }
+
+    if (ordenacao === "mais-economico") {
+      return [...carrosFiltrados].sort(
+        (carroA, carroB) =>
+          obterPontuacaoEconomia(carroB) -
+            obterPontuacaoEconomia(carroA) ||
+          carroA.preco_a_partir_rs -
+            carroB.preco_a_partir_rs,
       );
     }
 
@@ -126,7 +233,13 @@ export default function Home() {
       );
     }
 
-    return carrosFiltrados;
+    return [...carrosFiltrados].sort(
+      (carroA, carroB) =>
+        obterPontuacaoRelevancia(carroB, textoBusca) -
+          obterPontuacaoRelevancia(carroA, textoBusca) ||
+        carros.findIndex((carro) => carro.id === carroA.id) -
+          carros.findIndex((carro) => carro.id === carroB.id),
+    );
   }, [
     busca,
     categoriasSelecionadas,
@@ -226,15 +339,18 @@ export default function Home() {
 
         <section className="pb-5 pt-4">
           <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
-            <div className="relative w-full lg:max-w-2xl">
-              <label htmlFor="busca-veiculos" className="sr-only">
+            <div className="relative w-full lg:w-160">
+              <label
+                htmlFor="busca-veiculos"
+                className="sr-only"
+              >
                 Buscar veículos
               </label>
 
               <svg
                 aria-hidden="true"
                 viewBox="0 0 24 24"
-                className="pointer-events-none absolute left-5 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-500"
+                className="pointer-events-none absolute left-5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500"
                 fill="none"
                 stroke="currentColor"
                 strokeWidth="1.8"
@@ -253,11 +369,16 @@ export default function Home() {
                   setBusca(event.target.value)
                 }
                 placeholder="Buscar por modelo, montadora ou motor"
-                className="h-14 w-full rounded-full border border-slate-300 bg-white pl-13 pr-5 text-base text-slate-900 shadow-sm outline-none transition placeholder:text-slate-500 focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
+                className="h-14 w-full rounded-full border border-slate-300 bg-white pl-12 pr-5 text-base text-slate-900 shadow-sm outline-none transition placeholder:text-slate-500 focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
               />
             </div>
 
-            <div className="relative w-full lg:w-44">
+            <div
+              className="relative w-full shrink-0 transition-[width] duration-200 lg:w-auto"
+              style={{
+                width: larguraOrdenacao[ordenacao],
+              }}
+            >
               <label htmlFor="ordenacao" className="sr-only">
                 Ordenar veículos
               </label>
@@ -270,7 +391,7 @@ export default function Home() {
                     event.target.value as TipoOrdenacao,
                   )
                 }
-                className="h-14 w-full appearance-none rounded-full border border-slate-300 bg-white px-5 pr-11 text-base font-semibold text-slate-900 shadow-sm outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
+                className="h-14 w-full appearance-none whitespace-nowrap rounded-full border border-slate-300 bg-white pl-6 pr-12 text-base font-semibold text-slate-900 shadow-sm outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
               >
                 <option value="ano-mais-recente">
                   Ano mais recente
@@ -284,7 +405,7 @@ export default function Home() {
                   Menor preço
                 </option>
 
-               <option value="mais-economico">
+                <option value="mais-economico">
                   Mais econômico
                 </option>
 
@@ -300,6 +421,8 @@ export default function Home() {
                 fill="none"
                 stroke="currentColor"
                 strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
               >
                 <path d="m7 10 5 5 5-5" />
               </svg>

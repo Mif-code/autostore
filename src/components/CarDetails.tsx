@@ -2,7 +2,10 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useState } from "react";
+import {
+  useState,
+  type MouseEvent,
+} from "react";
 
 import LeadModal from "@/components/LeadModal";
 import type { Carro } from "@/types/Carro";
@@ -137,6 +140,13 @@ export default function CarDetails({
 }: CarDetailsProps) {
   const [modalAberto, setModalAberto] = useState(false);
 
+  const [zoomAtivo, setZoomAtivo] = useState(false);
+
+  const [posicaoZoom, setPosicaoZoom] = useState({
+    x: 50,
+    y: 50,
+  });
+
   const nomeCompleto = `${carro.montadora} ${carro.modelo}`;
   const energia = identificarEnergia(carro);
   const cores = separarLista(carro.cores);
@@ -150,19 +160,68 @@ export default function CarDetails({
     setModalAberto(false);
   }
 
+  function ativarZoom(): void {
+    setZoomAtivo(true);
+  }
+
+  function desativarZoom(): void {
+    setZoomAtivo(false);
+
+    setPosicaoZoom({
+      x: 50,
+      y: 50,
+    });
+  }
+
+  function movimentarZoom(
+    event: MouseEvent<HTMLDivElement>,
+  ): void {
+    const areaImagem =
+      event.currentTarget.getBoundingClientRect();
+
+    const posicaoX =
+      ((event.clientX - areaImagem.left) /
+        areaImagem.width) *
+      100;
+
+    const posicaoY =
+      ((event.clientY - areaImagem.top) /
+        areaImagem.height) *
+      100;
+
+    setPosicaoZoom({
+      x: Math.min(100, Math.max(0, posicaoX)),
+      y: Math.min(100, Math.max(0, posicaoY)),
+    });
+  }
+
   return (
     <>
       <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,2fr)_320px]">
         <div className="min-w-0 space-y-4">
           <section className="overflow-hidden rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-            <div className="relative h-90 w-full overflow-hidden bg-white sm:h-117.5">
+            <div
+              onMouseEnter={ativarZoom}
+              onMouseLeave={desativarZoom}
+              onMouseMove={movimentarZoom}
+              className="relative h-90 w-full cursor-zoom-in overflow-hidden bg-white sm:h-117.5"
+            >
               <Image
                 src={`/${carro.imagem_arquivo}`}
                 alt={nomeCompleto}
                 fill
                 priority
-                className="object-contain"
+                className="pointer-events-none object-contain"
                 sizes="(max-width: 1024px) 100vw, 66vw"
+                style={{
+                  transform: zoomAtivo
+                    ? "scale(2)"
+                    : "scale(1)",
+                  transformOrigin: `${posicaoZoom.x}% ${posicaoZoom.y}%`,
+                  transition: zoomAtivo
+                    ? "transform 120ms ease-out"
+                    : "transform 220ms ease-out",
+                }}
               />
             </div>
           </section>
@@ -366,46 +425,44 @@ export default function CarDetails({
           </h2>
 
           <div className="mt-4 grid gap-4 md:grid-cols-3">
-            {semelhantes
-              .slice(0, 3)
-              .map((semelhante) => (
-                <Link
-                  key={semelhante.id}
-                  href={`/carros/${semelhante.id}`}
-                  className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm transition hover:-translate-y-1 hover:shadow-md"
-                >
-                  <div className="relative h-44 bg-slate-100">
-                    <Image
-                      src={`/${semelhante.imagem_arquivo}`}
-                      alt={`${semelhante.montadora} ${semelhante.modelo}`}
-                      fill
-                      className="object-cover"
-                      sizes="(max-width: 768px) 100vw, 33vw"
-                    />
-                  </div>
+            {semelhantes.slice(0, 3).map((semelhante) => (
+              <Link
+                key={semelhante.id}
+                href={`/carros/${semelhante.id}`}
+                className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm transition hover:-translate-y-1 hover:shadow-md"
+              >
+                <div className="relative h-44 bg-slate-100">
+                  <Image
+                    src={`/${semelhante.imagem_arquivo}`}
+                    alt={`${semelhante.montadora} ${semelhante.modelo}`}
+                    fill
+                    className="object-cover"
+                    sizes="(max-width: 768px) 100vw, 33vw"
+                  />
+                </div>
 
-                  <div className="p-4">
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="min-w-0">
-                        <h3 className="truncate text-base font-bold text-slate-950">
-                          {semelhante.modelo}
-                        </h3>
+                <div className="p-4">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <h3 className="truncate text-base font-bold text-slate-950">
+                        {semelhante.modelo}
+                      </h3>
 
-                        <p className="mt-1 truncate text-xs text-slate-500">
-                          {semelhante.montadora} ·{" "}
-                          {semelhante.consumo}
-                        </p>
-                      </div>
-
-                      <p className="shrink-0 text-sm font-bold text-slate-950">
-                        {formatarPreco(
-                          semelhante.preco_a_partir_rs,
-                        )}
+                      <p className="mt-1 truncate text-xs text-slate-500">
+                        {semelhante.montadora} ·{" "}
+                        {semelhante.consumo}
                       </p>
                     </div>
+
+                    <p className="shrink-0 text-sm font-bold text-slate-950">
+                      {formatarPreco(
+                        semelhante.preco_a_partir_rs,
+                      )}
+                    </p>
                   </div>
-                </Link>
-              ))}
+                </div>
+              </Link>
+            ))}
           </div>
         </section>
       )}
