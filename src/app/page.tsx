@@ -272,12 +272,20 @@ export default function Home() {
                 }
                 className="h-14 w-full appearance-none rounded-full border border-slate-300 bg-white px-5 pr-11 text-base font-semibold text-slate-900 shadow-sm outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
               >
+                <option value="ano-mais-recente">
+                  Ano mais recente
+                </option>
+
                 <option value="relevancia">
                   Relevância
                 </option>
 
                 <option value="menor-preco">
                   Menor preço
+                </option>
+
+               <option value="mais-economico">
+                  Mais econômico
                 </option>
 
                 <option value="maior-preco">
