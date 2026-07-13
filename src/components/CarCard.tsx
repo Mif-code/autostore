@@ -145,14 +145,14 @@ export default function CarCard({
       <article
         className={`flex h-full min-w-0 flex-col overflow-hidden rounded-2xl border bg-white shadow-sm transition duration-300 hover:-translate-y-1 hover:shadow-lg ${
           selecionado
-            ? "border-blue-600 ring-2 ring-blue-100"
+            ? "border-slate-800 ring-2 ring-slate-200"
             : "border-slate-200"
         }`}
       >
         <Link
           href={`/carros/${carro.id}`}
           aria-label={`Ver detalhes de ${nomeCompleto}`}
-          className="group flex min-w-0 flex-1 cursor-pointer flex-col focus:outline-none focus:ring-2 focus:ring-inset focus:ring-blue-600"
+          className="group flex min-w-0 flex-1 cursor-pointer flex-col focus:outline-none focus:ring-2 focus:ring-inset focus:ring-slate-800"
         >
           <div className="relative h-64 w-full overflow-hidden bg-slate-100">
             <Image
@@ -164,7 +164,7 @@ export default function CarCard({
             />
 
             {selecionado && (
-              <span className="absolute right-3 top-3 rounded-full bg-blue-600 px-3 py-1 text-xs font-bold text-white shadow">
+              <span className="absolute right-3 top-3 rounded-full bg-slate-800 px-3 py-1 text-xs font-bold text-white shadow">
                 Selecionado
               </span>
             )}
@@ -173,7 +173,7 @@ export default function CarCard({
           <div className="flex min-w-0 flex-1 flex-col p-5">
             <div className="flex items-start justify-between gap-4">
               <div className="min-w-0">
-                <h2 className="truncate text-xl font-bold text-slate-900 transition group-hover:text-blue-600">
+                <h2 className="truncate text-xl font-bold text-slate-900 transition group-hover:text-slate-700">
                   {carro.modelo}
                 </h2>
 
@@ -281,10 +281,10 @@ export default function CarCard({
               onClick={() =>
                 onAlternarComparacao(carro.id)
               }
-              className={`flex w-full min-w-0 items-center justify-center rounded-full border px-2 py-2 text-center text-sm font-semibold transition focus:outline-none focus:ring-2 focus:ring-blue-600 focus:ring-offset-2 ${
+              className={`flex w-full min-w-0 items-center justify-center rounded-full border px-2 py-2 text-center text-sm font-semibold transition focus:outline-none focus:ring-2 focus:ring-slate-800 focus:ring-offset-2 ${
                 selecionado
-                  ? "border-blue-600 bg-blue-600 text-white hover:bg-blue-700"
-                  : "border-slate-300 bg-white text-slate-900 hover:border-blue-600 hover:text-blue-600"
+                  ? "border-slate-800 bg-slate-800 text-white hover:bg-slate-900"
+                  : "border-slate-300 bg-white text-slate-900 hover:border-slate-800 hover:text-slate-800"
               } disabled:cursor-not-allowed disabled:border-slate-200 disabled:bg-slate-100 disabled:text-slate-400`}
             >
               {selecionado ? "Remover" : "Comparar"}
@@ -293,7 +293,7 @@ export default function CarCard({
             <button
               type="button"
               onClick={abrirModal}
-              className="flex w-full min-w-0 items-center justify-center whitespace-nowrap rounded-full bg-blue-600 px-2 py-2 text-center text-sm font-semibold text-white transition hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:ring-offset-2"
+              className="flex w-full min-w-0 items-center justify-center whitespace-nowrap rounded-full bg-slate-800 px-2 py-2 text-center text-sm font-semibold text-white transition hover:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-800 focus:ring-offset-2"
             >
               Tenho interesse
             </button>

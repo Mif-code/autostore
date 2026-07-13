@@ -39,7 +39,7 @@ export default function ChatSidebar({
       <button
         type="button"
         onClick={onNovaConversa}
-        className="flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:ring-offset-2"
+        className="flex w-full items-center justify-center gap-2 rounded-xl bg-slate-800 px-4 py-3 text-sm font-semibold text-white transition hover:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-800 focus:ring-offset-2"
       >
         <svg
           aria-hidden="true"
@@ -77,17 +77,11 @@ export default function ChatSidebar({
                 }
                 className={`w-full rounded-xl border px-3 py-3 text-left transition ${
                   ativa
-                    ? "border-blue-200 bg-blue-50"
+                    ? "border-slate-300 bg-slate-100"
                     : "border-transparent hover:border-slate-200 hover:bg-slate-50"
                 }`}
               >
-                <p
-                  className={`truncate text-sm font-semibold ${
-                    ativa
-                      ? "text-blue-700"
-                      : "text-slate-800"
-                  }`}
-                >
+                <p className="truncate text-sm font-semibold text-slate-800">
                   {conversa.titulo}
                 </p>
 

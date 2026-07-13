@@ -232,50 +232,15 @@ export default function CarDetails({
             </h2>
 
             <div className="mt-5 grid gap-x-5 gap-y-4 sm:grid-cols-2 lg:grid-cols-3">
-              <CampoFicha
-                titulo="Montadora"
-                valor={carro.montadora}
-              />
-
-              <CampoFicha
-                titulo="Modelo"
-                valor={carro.modelo}
-              />
-
-              <CampoFicha
-                titulo="Categoria"
-                valor={carro.categoria}
-              />
-
-              <CampoFicha
-                titulo="Ano"
-                valor={String(carro.ano)}
-              />
-
-              <CampoFicha
-                titulo="Motor"
-                valor={carro.motor}
-              />
-
-              <CampoFicha
-                titulo="Potência"
-                valor={carro.potencia_cv}
-              />
-
-              <CampoFicha
-                titulo="Câmbio"
-                valor={carro.cambio}
-              />
-
-              <CampoFicha
-                titulo="Combustível / energia"
-                valor={energia}
-              />
-
-              <CampoFicha
-                titulo="Consumo"
-                valor={carro.consumo}
-              />
+              <CampoFicha titulo="Montadora" valor={carro.montadora} />
+              <CampoFicha titulo="Modelo" valor={carro.modelo} />
+              <CampoFicha titulo="Categoria" valor={carro.categoria} />
+              <CampoFicha titulo="Ano" valor={String(carro.ano)} />
+              <CampoFicha titulo="Motor" valor={carro.motor} />
+              <CampoFicha titulo="Potência" valor={carro.potencia_cv} />
+              <CampoFicha titulo="Câmbio" valor={carro.cambio} />
+              <CampoFicha titulo="Combustível / energia" valor={energia} />
+              <CampoFicha titulo="Consumo" valor={carro.consumo} />
             </div>
 
             <p className="mt-5 text-sm leading-6 text-slate-600">
@@ -355,14 +320,14 @@ export default function CarDetails({
               <button
                 type="button"
                 onClick={abrirModal}
-                className="flex w-full items-center justify-center rounded-full bg-blue-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:ring-offset-2"
+                className="flex w-full items-center justify-center rounded-full bg-slate-800 px-4 py-3 text-sm font-semibold text-white transition hover:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-800 focus:ring-offset-2"
               >
                 Tenho interesse
               </button>
 
               <Link
                 href={`/chat/new?carro=${carro.id}`}
-                className="flex w-full items-center justify-center gap-2 rounded-full bg-blue-100 px-4 py-3 text-sm font-medium text-blue-800 transition hover:bg-blue-200 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:ring-offset-2"
+                className="flex w-full items-center justify-center gap-2 rounded-full bg-slate-200 px-4 py-3 text-sm font-medium text-slate-800 transition hover:bg-slate-300 focus:outline-none focus:ring-2 focus:ring-slate-800 focus:ring-offset-2"
               >
                 <span className="relative h-5 w-5 shrink-0 overflow-hidden rounded-md">
                   <Image
@@ -379,7 +344,7 @@ export default function CarDetails({
 
               <Link
                 href={`/comparar?ids=${carro.id}`}
-                className="flex w-full items-center justify-center rounded-full border border-slate-300 bg-slate-50 px-4 py-3 text-sm font-medium text-slate-900 transition hover:border-blue-500 hover:bg-blue-50 hover:text-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:ring-offset-2"
+                className="flex w-full items-center justify-center rounded-full border border-slate-300 bg-slate-50 px-4 py-3 text-sm font-medium text-slate-900 transition hover:border-slate-800 hover:bg-slate-100 hover:text-slate-800 focus:outline-none focus:ring-2 focus:ring-slate-800 focus:ring-offset-2"
               >
                 Adicionar à comparação
               </Link>
@@ -408,9 +373,7 @@ export default function CarDetails({
                     )}`}
                   />
 
-                  <span className="truncate">
-                    {cor}
-                  </span>
+                  <span className="truncate">{cor}</span>
                 </div>
               ))}
             </div>
