@@ -8,7 +8,7 @@ O projeto permite explorar um catálogo de veículos, visualizar informações t
 
 ## 📌 Sobre o projeto
 
-O Vroom AutoStore foi desenvolvido como solução para facilitar a escolha de veículos dentro de uma loja virtual.
+O Vroomly AutoStore foi desenvolvido como solução para facilitar a escolha de veículos dentro de uma loja virtual.
 
 Além das funcionalidades tradicionais de um catálogo automotivo, o sistema utiliza Inteligência Artificial para responder perguntas utilizando informações recuperadas da base técnica fornecida no desafio.
 
@@ -142,12 +142,12 @@ Durante os testes, a base técnica utilizada pelo projeto gerou **23 chunks**, c
 - Veículo selecionado.
 - Mensagem.
 - Data de criação.
-- Busca de leads.
-- Filtros por status.
-- Alteração de status.
-- Exclusão de leads.
+- Busca de leads por nome, e-mail ou veículo.
+- Organização visual dos leads por status durante a sessão.
+- Alteração visual do status do lead durante a sessão.
+- Exclusão de leads persistidos.
 - Atualização da listagem.
-- Painel interno para acompanhamento dos contatos.
+- Painel lateral com informações detalhadas do interessado.
 
 ### 🌙 Tema claro e escuro
 
@@ -183,10 +183,13 @@ Interface adaptada para diferentes tamanhos de tela, incluindo desktop, tablet e
 ### Inteligência Artificial
 
 - Google Gemini API
-- Embeddings
-- Busca semântica
-- Similaridade vetorial
-- Retrieval-Augmented Generation (RAG)
+- `gemini-embedding-001`
+- `gemini-3.1-flash-lite`
+- Embeddings com `RETRIEVAL_DOCUMENT` para indexação.
+- Embeddings com `RETRIEVAL_QUERY` para consultas.
+- Busca semântica.
+- Similaridade vetorial.
+- Retrieval-Augmented Generation (RAG).
 
 ### Ferramentas
 
@@ -207,6 +210,7 @@ autostore/
 │   └── rag/
 ├── public/
 │   ├── images/
+│   │   └── CREDITOS_FOTOS.csv
 │   ├── carrinho-comparacao.png
 │   ├── vroom-ai-icon.png
 │   └── vroomly-logo.png
@@ -420,7 +424,9 @@ Antes da apresentação, recomenda-se executar o sistema e testar:
 - detalhes dos veículos;
 - comparação;
 - formulário de interesse;
-- criação, alteração e exclusão de leads;
+- criação e exclusão persistente de leads;
+- busca e consulta das informações dos leads;
+- alteração visual do status dos leads durante a sessão;
 - histórico do VroomAI;
 - limpeza das conversas;
 - chat flutuante;
@@ -463,11 +469,14 @@ O projeto foi desenvolvido para execução local durante a avaliação técnica.
 Por esse motivo:
 
 - os leads são armazenados localmente em arquivo JSON;
+- os status utilizados na interface de gestão de leads são mantidos durante a sessão da página e não são persistidos no arquivo JSON;
 - o índice vetorial é criado e armazenado localmente;
 - o histórico das conversas é salvo no navegador;
 - a chave Gemini é configurada exclusivamente por variável de ambiente.
 
-Em um ambiente de produção, a evolução natural da arquitetura seria utilizar um banco de dados persistente para os leads e uma solução de armazenamento vetorial persistente para os embeddings.
+Em um ambiente de produção, a evolução natural da arquitetura seria utilizar um banco de dados persistente para os leads e seus status, além de uma solução de armazenamento vetorial persistente para os embeddings.
+
+Outra evolução prevista para o projeto é a implementação de um painel administrativo para o CRUD completo dos veículos, permitindo cadastrar, editar e remover veículos com sincronização e reindexação da base utilizada pelo RAG.
 
 ---
 
