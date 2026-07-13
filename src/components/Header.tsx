@@ -3,10 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import {
-  useEffect,
-  useState,
-} from "react";
+import { useEffect, useState } from "react";
 
 import { useTheme } from "@/components/ThemeProvider";
 
@@ -17,7 +14,8 @@ interface LinkNavegacao {
     | "catalogo"
     | "comparar"
     | "ia"
-    | "leads";
+    | "leads"
+    | "admin";
 }
 
 const links: LinkNavegacao[] = [
@@ -41,15 +39,18 @@ const links: LinkNavegacao[] = [
     href: "/leads",
     icone: "leads",
   },
+  {
+    nome: "Admin",
+    href: "/admin/carros",
+    icone: "admin",
+  },
 ];
 
 interface IconeMenuProps {
   readonly tipo: LinkNavegacao["icone"];
 }
 
-function IconeMenu({
-  tipo,
-}: IconeMenuProps) {
+function IconeMenu({ tipo }: IconeMenuProps) {
   if (tipo === "catalogo") {
     return (
       <svg
@@ -127,6 +128,24 @@ function IconeMenu({
     );
   }
 
+  if (tipo === "leads") {
+    return (
+      <svg
+        aria-hidden="true"
+        viewBox="0 0 24 24"
+        className="h-4 w-4"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.8"
+      >
+        <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+        <circle cx="9" cy="7" r="4" />
+        <path d="M19 8v6" />
+        <path d="M22 11h-6" />
+      </svg>
+    );
+  }
+
   return (
     <svg
       aria-hidden="true"
@@ -135,11 +154,24 @@ function IconeMenu({
       fill="none"
       stroke="currentColor"
       strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
     >
-      <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
-      <circle cx="9" cy="7" r="4" />
-      <path d="M19 8v6" />
-      <path d="M22 11h-6" />
+      <rect
+        x="3"
+        y="4"
+        width="18"
+        height="16"
+        rx="2"
+      />
+
+      <path d="M3 9h18" />
+      <path d="M8 4v5" />
+      <path d="M16 4v5" />
+      <path d="M8 14h3" />
+      <path d="M14 14h2" />
+      <path d="M8 17h2" />
+      <path d="M13 17h3" />
     </svg>
   );
 }
@@ -219,6 +251,10 @@ export default function Header() {
       return pathname === "/";
     }
 
+    if (href === "/admin/carros") {
+      return pathname.startsWith("/admin");
+    }
+
     return pathname.startsWith(href);
   }
 
@@ -248,7 +284,7 @@ export default function Header() {
 
         <nav
           aria-label="Navegação principal"
-          className="absolute left-1/2 flex -translate-x-1/2 items-center gap-2"
+          className="absolute left-1/2 flex -translate-x-1/2 items-center gap-1"
         >
           {links.map((link) => {
             const ativo =
@@ -258,7 +294,7 @@ export default function Header() {
               <Link
                 key={link.href}
                 href={link.href}
-                className={`flex shrink-0 items-center gap-2 rounded-2xl px-4 py-3 text-sm font-semibold transition ${
+                className={`flex shrink-0 items-center gap-2 rounded-2xl px-3.5 py-3 text-sm font-semibold transition ${
                   ativo
                     ? "bg-blue-100 text-blue-700 shadow-sm dark:bg-blue-950 dark:text-blue-300"
                     : "text-slate-600 hover:bg-white hover:text-slate-900 dark:text-slate-400 dark:hover:bg-neutral-900 dark:hover:text-white"
