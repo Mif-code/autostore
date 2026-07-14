@@ -168,6 +168,8 @@ function IconeMenu({ tipo }: IconeMenuProps) {
       <path d="M3 9h18" />
       <path d="M8 4v5" />
       <path d="M16 4v5" />
+      <path d="M8 9v5" />
+      <path d="M16 9v5" />
       <path d="M8 14h3" />
       <path d="M14 14h2" />
       <path d="M8 17h2" />
@@ -218,6 +220,25 @@ function IconeSol() {
   );
 }
 
+function IconeLogin() {
+  return (
+    <svg
+      aria-hidden="true"
+      viewBox="0 0 24 24"
+      className="h-4 w-4"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4" />
+      <path d="M10 17l5-5-5-5" />
+      <path d="M15 12H3" />
+    </svg>
+  );
+}
+
 export default function Header() {
   const pathname = usePathname();
   const { tema, alternarTema } = useTheme();
@@ -261,7 +282,7 @@ export default function Header() {
             : "bg-transparent"
         }`}
       >
-        {/* BARRA SUPERIOR: MESMA COR DO RODAPÉ */}
+        {/* BARRA SUPERIOR */}
 
         <div
           className={`overflow-hidden bg-slate-800 transition-all duration-300 ease-in-out dark:bg-slate-800 ${
@@ -270,27 +291,39 @@ export default function Header() {
               : "max-h-11 translate-y-0 opacity-100"
           }`}
         >
-          <nav
-            aria-label="Navegação institucional"
-            className="flex min-h-11 items-center gap-1 overflow-x-auto px-3 scrollbar-none sm:justify-center sm:gap-2 sm:px-5"
-          >
-            {linksInstitucionais.map((link) => (
-              <Link
-                key={link.nome}
-                href={link.href}
-                className={`shrink-0 whitespace-nowrap rounded-full px-3 py-2 text-xs font-semibold transition sm:px-4 sm:text-sm ${
-                  link.destaque
-                    ? "bg-white text-slate-800 shadow-sm hover:bg-slate-100"
-                    : "text-slate-100 hover:bg-white/15 hover:text-white"
-                }`}
-              >
-                {link.nome}
-              </Link>
-            ))}
-          </nav>
+          <div className="relative min-h-11">
+            <nav
+              aria-label="Navegação institucional"
+              className="flex min-h-11 items-center gap-1 overflow-x-auto px-3 pr-28 scrollbar-none sm:justify-center sm:gap-2 sm:px-5 sm:pr-32"
+            >
+              {linksInstitucionais.map((link) => (
+                <Link
+                  key={link.nome}
+                  href={link.href}
+                  className={`shrink-0 whitespace-nowrap rounded-full px-3 py-2 text-xs font-semibold transition sm:px-4 sm:text-sm ${
+                    link.destaque
+                      ? "bg-white text-slate-800 shadow-sm hover:bg-slate-100"
+                      : "text-slate-100 hover:bg-white/15 hover:text-white"
+                  }`}
+                >
+                  {link.nome}
+                </Link>
+              ))}
+            </nav>
+
+            {/* LOGIN NO CANTO DIREITO */}
+
+            <Link
+              href="/login"
+              className="absolute right-3 top-1/2 flex -translate-y-1/2 items-center gap-2 rounded-full border border-white/30 px-4 py-2 text-xs font-semibold text-white transition hover:border-white hover:bg-white hover:text-slate-800 sm:right-5 sm:text-sm"
+            >
+              <IconeLogin />
+              <span>Login</span>
+            </Link>
+          </div>
         </div>
 
-        {/* MENU PRINCIPAL: PERMANECE FIXO */}
+        {/* MENU PRINCIPAL */}
 
         <div
           className={`relative flex min-h-20 items-center border-b border-slate-200 transition-all duration-300 dark:border-slate-800 ${
